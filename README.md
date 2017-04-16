@@ -2,6 +2,8 @@
 
 Add graphical view of agenda to agenda buffer.
 
+![Preview](./img/timeline1.png)
+
 # Installation
 
 After you install this package from MELPA Stable, add the following line to your org configuration:
