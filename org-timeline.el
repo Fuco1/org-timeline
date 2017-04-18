@@ -95,6 +95,8 @@ activated."
                (beg (+ (* hour 60) minute))
                (end (+ beg duration))
                (face (--if-let (org-entry-get (org-get-at-bol 'org-marker) "TIMELINE_FACE")
+                         ;; TODO: extract face-translation logic to
+                         ;; separate function
                          (let ((read-face (car (read-from-string it))))
                            (if (stringp read-face)
                                (list :background read-face)
