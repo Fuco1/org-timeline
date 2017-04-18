@@ -30,6 +30,37 @@
 
 (require 'org-agenda)
 
+(defgroup org-timeline ()
+  "Graphical view of agenda in agenda buffer."
+  :group 'org
+  :prefix "org-timeline-")
+
+(defgroup org-timeline-faces ()
+  "Faces for org-timeline."
+  :group 'org-timeline)
+
+(defface org-timeline-block
+  '((t (:background "RoyalBlue")))
+  "Face used for printing blocks with time range information.
+
+These are blocks that are scheduled for specific time range or
+have an active timestamp with a range."
+  :group 'org-timeline-faces)
+
+(defface org-timeline-elapsed
+  '((t (:background "#555555")))
+  "Face used for highlighting elapsed portion of the day."
+  :group 'org-timeline-faces)
+
+(defface org-timeline-clocked
+  '((t (:background "Grey")))
+  "Face used for printing clocked blocks.
+
+Clocked blocks appear in the agenda when `org-agenda-log-mode' is
+activated."
+  :group 'org-timeline-faces)
+
+
 (defmacro org-timeline-with-each-line (&rest body)
   "Execute BODY on each line in buffer."
   (declare (indent 0)
@@ -48,7 +79,7 @@
          (slotline (copy-sequence "|     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |"))
          (slotline (progn
                      (when (< 0 current-offset)
-                       (put-text-property 0 current-offset 'font-lock-face '(:background "#555555") slotline))
+                       (put-text-property 0 current-offset 'font-lock-face 'org-timeline-elapsed slotline))
                      slotline))
          (timeline (concat "|05:00|06:00|07:00|08:00|09:00|10:00|11:00|12:00|13:00|14:00|15:00|16:00|17:00|18:00|19:00|20:00|21:00|22:00|23:00|00:00|01:00|02:00|03:00|04:00|"
                            "\n"
@@ -72,8 +103,8 @@
                         ((save-excursion
                            (forward-char 26)
                            (looking-at "Clocked:"))
-                         '(:background "Grey"))
-                        (t '(:background "RoyalBlue"))))))
+                         'org-timeline-clocked)
+                        (t 'org-timeline-block)))))
           (when (>= beg start-offset)
             (push (list beg end face) tasks)))))
     (setq tasks (nreverse tasks))
