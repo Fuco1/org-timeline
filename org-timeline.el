@@ -101,8 +101,7 @@ activated."
                              read-face))
                        (cond
                         ((save-excursion
-                           (forward-char 26)
-                           (looking-at "Clocked:"))
+                           (search-forward "Clocked:" (line-end-position) t))
                          'org-timeline-clocked)
                         (t 'org-timeline-block)))))
           (when (>= beg start-offset)
