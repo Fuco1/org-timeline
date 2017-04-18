@@ -5,3 +5,7 @@
 
 (depends-on "dash" "2.13.0")
 (depends-on "org-plus-contrib")
+
+(development
+ (depends-on "undercover")
+ (depends-on "buttercup"))
