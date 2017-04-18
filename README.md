@@ -1,4 +1,4 @@
-# org-timeline
+# org-timeline [![Build Status](https://travis-ci.org/Fuco1/org-timeline.svg?branch=master)](https://travis-ci.org/Fuco1/org-timeline)
 
 Add graphical view of agenda to agenda buffer.
 
