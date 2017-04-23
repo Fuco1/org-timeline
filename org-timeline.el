@@ -4,7 +4,7 @@
 
 ;; Author: Matúš Goljer <matus.goljer@gmail.com>
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Created: 16th April 2017
 ;; Package-requires: ((dash "2.13.0"))
 ;; Keywords: calendar
@@ -133,7 +133,8 @@ activated."
 (defun org-timeline-insert-timeline ()
   "Insert graphical timeline into agenda buffer."
   (goto-char (point-min))
-  (while (eq (get-text-property (line-beginning-position) 'org-agenda-type) 'agenda)
+  (while (and (eq (get-text-property (line-beginning-position) 'org-agenda-type) 'agenda)
+              (not (eobp)))
     (forward-line))
   (forward-line)
   (let ((inhibit-read-only t))
