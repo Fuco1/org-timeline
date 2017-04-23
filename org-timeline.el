@@ -72,6 +72,7 @@ activated."
        ,@body)))
 
 (defun org-timeline--generate-timeline ()
+  "Generate the timeline string that will represent current agenda view."
   (let* ((start-offset 300)
          (current-offset (/ (- (+ (* 60 (string-to-number (format-time-string "%H")))
                                   (string-to-number (format-time-string "%M")))
@@ -130,6 +131,7 @@ activated."
           (buffer-string))))))
 
 (defun org-timeline-insert-timeline ()
+  "Insert graphical timeline into agenda buffer."
   (goto-char (point-min))
   (while (eq (get-text-property (line-beginning-position) 'org-agenda-type) 'agenda)
     (forward-line))
