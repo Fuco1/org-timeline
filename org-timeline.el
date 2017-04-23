@@ -4,7 +4,7 @@
 
 ;; Author: Matúš Goljer <matus.goljer@gmail.com>
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
-;; Version: 0.1.1
+;; Version: 0.1.2
 ;; Created: 16th April 2017
 ;; Package-requires: ((dash "2.13.0"))
 ;; Keywords: calendar
@@ -132,16 +132,17 @@ activated."
 
 (defun org-timeline-insert-timeline ()
   "Insert graphical timeline into agenda buffer."
-  (goto-char (point-min))
-  (while (and (eq (get-text-property (line-beginning-position) 'org-agenda-type) 'agenda)
-              (not (eobp)))
-    (forward-line))
-  (forward-line)
-  (let ((inhibit-read-only t))
-    (insert (org-timeline--generate-timeline))
-    (insert (propertize (concat "\n" (make-string (/ (window-width) 2) ?─)) 'face 'org-time-grid) "\n"))
-  ;; enable `font-lock-mode' in agenda view to display the "chart"
-  (font-lock-mode))
+  (unless (buffer-narrowed-p)
+    (goto-char (point-min))
+    (while (and (eq (get-text-property (line-beginning-position) 'org-agenda-type) 'agenda)
+                (not (eobp)))
+      (forward-line))
+    (forward-line)
+    (let ((inhibit-read-only t))
+      (insert (org-timeline--generate-timeline))
+      (insert (propertize (concat "\n" (make-string (/ (window-width) 2) ?─)) 'face 'org-time-grid) "\n"))
+    ;; enable `font-lock-mode' in agenda view to display the "chart"
+    (font-lock-mode)))
 
 (provide 'org-timeline)
 ;;; org-timeline.el ends here
