@@ -94,7 +94,7 @@ activated."
         (let* ((hour (/ time-of-day 100))
                (minute (mod time-of-day 100))
                (beg (+ (* hour 60) minute))
-               (end (+ beg duration))
+               (end (round (+ beg duration)))
                (face (--if-let (org-entry-get (org-get-at-bol 'org-marker) "TIMELINE_FACE")
                          ;; TODO: extract face-translation logic to
                          ;; separate function
