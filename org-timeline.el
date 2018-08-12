@@ -6,8 +6,9 @@
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
 ;; Version: 0.1.2
 ;; Created: 16th April 2017
-;; Package-requires: ((dash "2.13.0"))
+;; Package-requires: ((dash "2.13.0") (emacs "24.3"))
 ;; Keywords: calendar
+;; URL: https://github.com/Fuco1/org-timeline/
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
@@ -23,6 +24,23 @@
 ;; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
+
+;; Add graphical view of agenda to agenda buffer.
+
+;; This package adds a graphical view of the agenda after the last
+;; agenda line.  By default the display starts at 5 AM today and
+;; goes up to 4 AM next day (this covers 24 hours).
+
+;; Scheduled tasks or tasks with time ranges are rendered in the
+;; display with `org-timeline-block' face.  Clocked entires are
+;; displayed in `org-timeline-clocked' face.  The background of
+;; timeslots which are in the past is highlighted with
+;; `org-timeline-elapsed` face.
+
+;; You can use custom color for a task by adding the property
+;; `TIMELINE_FACE' with either a string which is a color name or a
+;; list which specifies the face properties or a symbol which is
+;; taken to be a face name.
 
 ;;; Code:
 
