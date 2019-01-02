@@ -58,7 +58,7 @@
   :group 'org-timeline)
 
 (defface org-timeline-block
-  '((t (:background "RoyalBlue")))
+  '((t (:inherit secondary-selection)))
   "Face used for printing blocks with time range information.
 
 These are blocks that are scheduled for specific time range or
@@ -66,12 +66,12 @@ have an active timestamp with a range."
   :group 'org-timeline-faces)
 
 (defface org-timeline-elapsed
-  '((t (:background "#555555")))
+  '((t (:inherit region)))
   "Face used for highlighting elapsed portion of the day."
   :group 'org-timeline-faces)
 
 (defface org-timeline-clocked
-  '((t (:background "Grey")))
+  '((t (:inherit highlight)))
   "Face used for printing clocked blocks.
 
 Clocked blocks appear in the agenda when `org-agenda-log-mode' is
