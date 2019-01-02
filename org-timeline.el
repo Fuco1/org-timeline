@@ -89,6 +89,19 @@ activated."
      (while (= (forward-line) 0)
        ,@body)))
 
+(defun org-timeline--get-face ()
+  "Get the face with which to draw the current block."
+  (--if-let (org-entry-get (org-get-at-bol 'org-marker) "TIMELINE_FACE" t)
+      (let ((read-face (car (read-from-string it))))
+        (if (stringp read-face)
+            (list :background read-face)
+          read-face))
+    (cond
+     ((save-excursion
+        (search-forward "Clocked:" (line-end-position) t))
+      'org-timeline-clocked)
+     (t 'org-timeline-block))))
+
 (defun org-timeline--add-elapsed-face (string current-offset)
   "Add `org-timeline-elapsed' to STRING's elapsed portion.
 
@@ -121,18 +134,7 @@ Return new copy of STRING."
                (minute (mod time-of-day 100))
                (beg (+ (* hour 60) minute))
                (end (round (+ beg duration)))
-               (face (--if-let (org-entry-get (org-get-at-bol 'org-marker) "TIMELINE_FACE")
-                         ;; TODO: extract face-translation logic to
-                         ;; separate function
-                         (let ((read-face (car (read-from-string it))))
-                           (if (stringp read-face)
-                               (list :background read-face)
-                             read-face))
-                       (cond
-                        ((save-excursion
-                           (search-forward "Clocked:" (line-end-position) t))
-                         'org-timeline-clocked)
-                        (t 'org-timeline-block)))))
+               (face (org-timeline--get-face)))
           (when (>= beg start-offset)
             (push (list beg end face) tasks)))))
     (setq tasks (nreverse tasks))
