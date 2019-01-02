@@ -89,20 +89,28 @@ activated."
      (while (= (forward-line) 0)
        ,@body)))
 
+(defun org-timeline--add-elapsed-face (string current-offset)
+  "Add `org-timeline-elapsed' to STRING's elapsed portion.
+
+Return new copy of STRING."
+  (let ((string-copy (copy-sequence string)))
+    (when (< 0 current-offset)
+      (put-text-property 0 current-offset 'font-lock-face 'org-timeline-elapsed string-copy))
+    string-copy))
+
 (defun org-timeline--generate-timeline ()
   "Generate the timeline string that will represent current agenda view."
   (let* ((start-offset 300)
          (current-offset (/ (- (+ (* 60 (string-to-number (format-time-string "%H")))
                                   (string-to-number (format-time-string "%M")))
                                start-offset) 10))
-         (slotline (copy-sequence "|     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |"))
-         (slotline (progn
-                     (when (< 0 current-offset)
-                       (put-text-property 0 current-offset 'font-lock-face 'org-timeline-elapsed slotline))
-                     slotline))
-         (timeline (concat "|05:00|06:00|07:00|08:00|09:00|10:00|11:00|12:00|13:00|14:00|15:00|16:00|17:00|18:00|19:00|20:00|21:00|22:00|23:00|00:00|01:00|02:00|03:00|04:00|"
-                           "\n"
-                           slotline))
+         (slotline (org-timeline--add-elapsed-face
+                    "|     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |"
+                    current-offset))
+         (hourline (org-timeline--add-elapsed-face
+                    "|05:00|06:00|07:00|08:00|09:00|10:00|11:00|12:00|13:00|14:00|15:00|16:00|17:00|18:00|19:00|20:00|21:00|22:00|23:00|00:00|01:00|02:00|03:00|04:00|"
+                    current-offset))
+         (timeline (concat hourline "\n" slotline))
          (tasks nil))
     (org-timeline-with-each-line
       (-when-let* ((time-of-day (org-get-at-bol 'time-of-day))
