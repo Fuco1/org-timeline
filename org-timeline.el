@@ -145,7 +145,7 @@ Return new copy of STRING."
           (insert timeline)
           (-each tasks
             (-lambda ((beg end face))
-              (while (get-text-property (get-start-pos current-line beg) 'occupied)
+              (while (get-text-property (get-start-pos current-line beg) 'org-timeline-occupied)
                 (cl-incf current-line)
                 (when (> (get-start-pos current-line beg) (point-max))
                   (save-excursion
@@ -154,7 +154,7 @@ Return new copy of STRING."
               (let ((start-pos (get-start-pos current-line beg))
                     (end-pos (get-end-pos current-line end)))
                 (put-text-property start-pos end-pos 'font-lock-face face)
-                (put-text-property start-pos end-pos 'occupied t))
+                (put-text-property start-pos end-pos 'org-timeline-occupied t))
               (setq current-line 1)))
           (buffer-string))))))
 
