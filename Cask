@@ -1,7 +1,7 @@
 (source melpa)
 (source org)
 
-(package "org-timeline" "0.2.0" "Add graphical view of agenda to agenda buffer")
+(package "org-timeline" "0.3.0" "Add graphical view of agenda to agenda buffer")
 
 (depends-on "dash" "2.13.0")
 (depends-on "org-plus-contrib")
