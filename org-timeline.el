@@ -129,7 +129,7 @@ Return new copy of STRING."
       (-when-let* ((time-of-day (org-get-at-bol 'time-of-day))
                    (marker (org-get-at-bol 'org-marker))
                    (type (org-get-at-bol 'type)))
-        (when (member type (list "clock" "timestamp"))
+        (when (member type (list "scheduled" "clock" "timestamp"))
           (let ((duration (org-get-at-bol 'duration)))
             (when (and (numberp duration)
                        (< duration 0))
