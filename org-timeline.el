@@ -57,6 +57,10 @@
   "Faces for org-timeline."
   :group 'org-timeline)
 
+(defcustom org-timeline-prepend nil
+  "Option to prepend the timeline to the agenda."
+  :type 'boolean)
+
 (defface org-timeline-block
   '((t (:inherit secondary-selection)))
   "Face used for printing blocks with time range information.
@@ -168,9 +172,11 @@ Return new copy of STRING."
   "Insert graphical timeline into agenda buffer."
   (unless (buffer-narrowed-p)
     (goto-char (point-min))
-    (while (and (eq (get-text-property (line-beginning-position) 'org-agenda-type) 'agenda)
-                (not (eobp)))
-      (forward-line))
+    (if org-timeline-prepend 
+        nil
+        (while (and (eq (get-text-property (line-beginning-position) 'org-agenda-type) 'agenda)
+                    (not (eobp)))
+          (forward-line)))
     (forward-line)
     (let ((inhibit-read-only t))
       (insert (org-timeline--generate-timeline))
