@@ -59,7 +59,8 @@
 
 (defcustom org-timeline-prepend nil
   "Option to prepend the timeline to the agenda."
-  :type 'boolean)
+  :type 'boolean
+  :group 'org-timeline)
 
 (defface org-timeline-block
   '((t (:inherit secondary-selection)))
