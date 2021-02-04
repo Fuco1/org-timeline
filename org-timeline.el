@@ -173,11 +173,10 @@ Return new copy of STRING."
   "Insert graphical timeline into agenda buffer."
   (unless (buffer-narrowed-p)
     (goto-char (point-min))
-    (if org-timeline-prepend 
-        nil
-        (while (and (eq (get-text-property (line-beginning-position) 'org-agenda-type) 'agenda)
-                    (not (eobp)))
-          (forward-line)))
+    (unless org-timeline-prepend
+      (while (and (eq (get-text-property (line-beginning-position) 'org-agenda-type) 'agenda)
+                  (not (eobp)))
+        (forward-line)))
     (forward-line)
     (let ((inhibit-read-only t))
       (insert (org-timeline--generate-timeline))
