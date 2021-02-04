@@ -62,6 +62,11 @@
   :type 'boolean
   :group 'org-timeline)
 
+(defcustom org-timeline-start-hour 5
+  "Starting hour of the timeline."
+  :type 'integer
+  :group 'org-timeline)
+
 (defface org-timeline-block
   '((t (:inherit secondary-selection)))
   "Face used for printing blocks with time range information.
@@ -116,20 +121,12 @@ Return new copy of STRING."
       (put-text-property 0 current-offset 'font-lock-face 'org-timeline-elapsed string-copy))
     string-copy))
 
-(defun org-timeline--generate-timeline ()
-  "Generate the timeline string that will represent current agenda view."
-  (let* ((start-offset 300)
+(defun org-timeline--list-tasks ()
+  "Build the list of tasks to display."
+  (let* ((tasks nil)
+         (start-offset (* org-timeline-start-hour 60))
          (current-time (+ (* 60 (string-to-number (format-time-string "%H")))
-                          (string-to-number (format-time-string "%M"))))
-         (current-offset (/ (- current-time start-offset) 10))
-         (slotline (org-timeline--add-elapsed-face
-                    "|     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |"
-                    current-offset))
-         (hourline (org-timeline--add-elapsed-face
-                    "|05:00|06:00|07:00|08:00|09:00|10:00|11:00|12:00|13:00|14:00|15:00|16:00|17:00|18:00|19:00|20:00|21:00|22:00|23:00|00:00|01:00|02:00|03:00|04:00|"
-                    current-offset))
-         (timeline (concat hourline "\n" slotline))
-         (tasks nil))
+                          (string-to-number (format-time-string "%M")))))
     (org-timeline-with-each-line
       (-when-let* ((time-of-day (org-get-at-bol 'time-of-day))
                    (marker (org-get-at-bol 'org-marker))
@@ -148,7 +145,26 @@ Return new copy of STRING."
                    (face (org-timeline--get-face)))
               (when (>= beg start-offset)
                 (push (list beg end face) tasks)))))))
-    (setq tasks (nreverse tasks))
+    (nreverse tasks)))
+
+(defun org-timeline--generate-timeline ()
+  "Generate the timeline string that will represent current agenda view."
+  (let* ((start-offset (* org-timeline-start-hour 60))
+         (current-time (+ (* 60 (string-to-number (format-time-string "%H")))
+                          (string-to-number (format-time-string "%M"))))
+         (current-offset (/ (- current-time start-offset) 10))
+         (slotline (org-timeline--add-elapsed-face
+                    "|     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |"
+                    current-offset))
+         (hourline (org-timeline--add-elapsed-face
+                    (concat "|"
+                            (mapconcat (lambda (x) (format "%02d:00" (mod x 24)))
+                                       (number-sequence org-timeline-start-hour (+ org-timeline-start-hour 23))
+                                       "|")
+                            "|")
+                    current-offset))
+         (timeline (concat hourline "\n" slotline))
+         (tasks (org-timeline--list-tasks)))
     (cl-labels ((get-start-pos (current-line beg) (+ 1 (* current-line (1+ (length slotline))) (/ (- beg start-offset) 10)))
                 (get-end-pos (current-line end) (+ 1 (* current-line (1+ (length slotline))) (/ (- end start-offset) 10))))
       (let ((current-line 1))
