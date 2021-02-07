@@ -175,7 +175,7 @@ Return new copy of STRING."
                    (type (org-get-at-bol 'type)))
         (when (member type (list "scheduled" "clock" "timestamp"))
           (let ((duration (org-get-at-bol 'duration))
-                (txt (org-get-at-bol 'txt))
+                (txt (buffer-substring (line-beginning-position) (line-end-position)))
                 (line (line-number-at-pos)))
             (when (and (numberp duration)
                        (< duration 0))
