@@ -67,10 +67,10 @@
   :type 'integer
   :group 'org-timeline)
 
-(defvar org-timeline-first-line 0
+(defconst org-timeline-first-line 0
   "Computer first line of the timeline in the buffer.")
 
-(defvar org-timeline-height 0
+(defconst org-timeline-height 0
   "Computed height (number of lines) of the timeline.")
 
 (defface org-timeline-block
