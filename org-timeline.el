@@ -67,6 +67,15 @@
   :type 'integer
   :group 'org-timeline)
 
+(defvar org-timeline-first-line 0
+  "Computer first line of the timeline in the buffer.")
+
+(defvar org-timeline-height 0
+  "Computed height (number of lines) of the timeline.")
+
+(defconst org-timeline-current-info nil
+  "Current displayed info. Used to fix flickering of info.")
+
 (defface org-timeline-block
   '((t (:inherit secondary-selection)))
   "Face used for printing blocks with time range information.
@@ -121,6 +130,39 @@ Return new copy of STRING."
       (put-text-property 0 current-offset 'font-lock-face 'org-timeline-elapsed string-copy))
     string-copy))
 
+(defun org-timeline--clear-info ()
+  "Clear the info line"
+  (save-excursion
+    (goto-line org-timeline-first-line)
+    (forward-line (- org-timeline-height 1))
+    (let ((inhibit-read-only t))
+      (while (not (get-text-property (point) 'org-timeline-end))
+        (kill-whole-line)))))
+
+(defun org-timeline--hover-info (win txt)
+  "Displays info about a hovered block"
+  (unless (eq txt org-timeline-current-info)
+    (setq org-timeline-current-info txt)
+    (save-window-excursion
+      (save-excursion
+        (select-window win)
+        (org-timeline--clear-info)
+        (goto-line org-timeline-first-line)
+        (forward-line (- org-timeline-height 1))
+        (let ((inhibit-read-only t))
+          (insert txt)
+          (insert "\n"))))))
+
+(defun org-timeline--move-to-task ()
+  "Move to a blocks correponding task."
+  (interactive
+   (let ((line (get-text-property (point) 'org-timeline-task-line)))
+     (org-timeline--clear-info)
+     (when org-timeline-prepend
+       (setq line (+ line org-timeline-height)))
+     (goto-line line)
+     (search-forward (get-text-property (point) 'time)))))
+
 (defun org-timeline--list-tasks ()
   "Build the list of tasks to display."
   (let* ((tasks nil)
@@ -132,7 +174,9 @@ Return new copy of STRING."
                    (marker (org-get-at-bol 'org-marker))
                    (type (org-get-at-bol 'type)))
         (when (member type (list "scheduled" "clock" "timestamp"))
-          (let ((duration (org-get-at-bol 'duration)))
+          (let ((duration (org-get-at-bol 'duration))
+                (txt (buffer-substring (line-beginning-position) (line-end-position)))
+                (line (line-number-at-pos)))
             (when (and (numberp duration)
                        (< duration 0))
               (cl-incf duration 1440))
@@ -144,7 +188,7 @@ Return new copy of STRING."
                           current-time))
                    (face (org-timeline--get-face)))
               (when (>= beg start-offset)
-                (push (list beg end face) tasks)))))))
+                (push (list beg end face txt line) tasks)))))))
     (nreverse tasks)))
 
 (defun org-timeline--generate-timeline ()
@@ -171,7 +215,7 @@ Return new copy of STRING."
         (with-temp-buffer
           (insert timeline)
           (-each tasks
-            (-lambda ((beg end face))
+            (-lambda ((beg end face txt line))
               (while (get-text-property (get-start-pos current-line beg) 'org-timeline-occupied)
                 (cl-incf current-line)
                 (when (> (get-start-pos current-line beg) (point-max))
@@ -179,9 +223,20 @@ Return new copy of STRING."
                     (goto-char (point-max))
                     (insert "\n" slotline))))
               (let ((start-pos (get-start-pos current-line beg))
-                    (end-pos (get-end-pos current-line end)))
-                (put-text-property start-pos end-pos 'font-lock-face face)
-                (put-text-property start-pos end-pos 'org-timeline-occupied t))
+                    (end-pos (get-end-pos current-line end))
+                    (move-to-task-map (make-sparse-keymap))
+                    (props (list 'font-lock-face face
+                                 'org-timeline-occupied t
+                                 'mouse-face 'highlight
+                                 'txt txt
+                                 'help-echo (lambda (w obj pos)
+                                              (org-timeline--hover-info w txt)
+                                              txt) ;; the lambda will be called on block hover
+                                 'org-timeline-task-line line
+                                  'cursor-sensor-functions '(org-timeline--display-info))))
+                (define-key move-to-task-map [mouse-1] 'org-timeline--move-to-task)
+                (put-text-property start-pos end-pos 'keymap move-to-task-map)
+                (add-text-properties start-pos end-pos props))
               (setq current-line 1)))
           (buffer-string))))))
 
@@ -195,8 +250,11 @@ Return new copy of STRING."
         (forward-line)))
     (forward-line)
     (let ((inhibit-read-only t))
+      (cursor-sensor-mode 1)
+      (setq org-timeline-first-line (line-number-at-pos))
       (insert (org-timeline--generate-timeline))
-      (insert (propertize (concat "\n" (make-string (/ (window-width) 2) ?─)) 'face 'org-time-grid) "\n"))
+      (insert (propertize (concat "\n" (make-string (/ (window-width) 2) ?─)) 'face 'org-time-grid 'org-timeline-end t) "\n")
+      (setq org-timeline-height (- (line-number-at-pos) org-timeline-first-line)))
     ;; enable `font-lock-mode' in agenda view to display the "chart"
     (font-lock-mode)))
 
