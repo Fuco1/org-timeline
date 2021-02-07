@@ -73,6 +73,9 @@
 (defconst org-timeline-height 0
   "Computed height (number of lines) of the timeline.")
 
+(defconst org-timeline-current-info nil
+  "Current displayed info. Used to fix flickering of info.")
+
 (defface org-timeline-block
   '((t (:inherit secondary-selection)))
   "Face used for printing blocks with time range information.
@@ -138,15 +141,17 @@ Return new copy of STRING."
 
 (defun org-timeline--hover-info (win txt)
   "Displays info about a hovered block"
-  (save-window-excursion
-    (save-excursion
-      (select-window win)
-      (org-timeline--clear-info)
-      (goto-line org-timeline-first-line)
-      (forward-line (- org-timeline-height 1))
-      (let ((inhibit-read-only t))
-        (insert txt)
-        (insert "\n")))))
+  (unless (eq txt org-timeline-current-info)
+    (setq org-timeline-current-info txt)
+    (save-window-excursion
+      (save-excursion
+        (select-window win)
+        (org-timeline--clear-info)
+        (goto-line org-timeline-first-line)
+        (forward-line (- org-timeline-height 1))
+        (let ((inhibit-read-only t))
+          (insert txt)
+          (insert "\n"))))))
 
 (defun org-timeline--move-to-task ()
   "Move to a blocks correponding task."
