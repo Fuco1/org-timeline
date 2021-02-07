@@ -160,7 +160,7 @@ Return new copy of STRING."
      (org-timeline--clear-info)
      (when org-timeline-prepend
        (setq line (+ line org-timeline-height)))
-     (goto-line line)
+     (goto-line (+ line 1))
      (search-forward (get-text-property (point) 'time)))))
 
 (defun org-timeline--list-tasks ()
