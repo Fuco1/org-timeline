@@ -132,7 +132,8 @@ Return new copy of STRING."
                    (marker (org-get-at-bol 'org-marker))
                    (type (org-get-at-bol 'type)))
         (when (member type (list "scheduled" "clock" "timestamp"))
-          (let ((duration (org-get-at-bol 'duration)))
+          (let ((duration (org-get-at-bol 'duration))
+                (txt (org-get-at-bol 'txt)))
             (when (and (numberp duration)
                        (< duration 0))
               (cl-incf duration 1440))
@@ -144,7 +145,7 @@ Return new copy of STRING."
                           current-time))
                    (face (org-timeline--get-face)))
               (when (>= beg start-offset)
-                (push (list beg end face) tasks)))))))
+                (push (list beg end face txt) tasks)))))))
     (nreverse tasks)))
 
 (defun org-timeline--generate-timeline ()
@@ -171,7 +172,7 @@ Return new copy of STRING."
         (with-temp-buffer
           (insert timeline)
           (-each tasks
-            (-lambda ((beg end face))
+            (-lambda ((beg end face txt))
               (while (get-text-property (get-start-pos current-line beg) 'org-timeline-occupied)
                 (cl-incf current-line)
                 (when (> (get-start-pos current-line beg) (point-max))
@@ -179,9 +180,12 @@ Return new copy of STRING."
                     (goto-char (point-max))
                     (insert "\n" slotline))))
               (let ((start-pos (get-start-pos current-line beg))
-                    (end-pos (get-end-pos current-line end)))
-                (put-text-property start-pos end-pos 'font-lock-face face)
-                (put-text-property start-pos end-pos 'org-timeline-occupied t))
+                    (end-pos (get-end-pos current-line end))
+                    (props (list 'font-lock-face face
+                                 'org-timeline-occupied t
+                                 'mouse-face 'highlight
+                                 'help-echo txt)))
+                (add-text-properties start-pos end-pos props))
               (setq current-line 1)))
           (buffer-string))))))
 
