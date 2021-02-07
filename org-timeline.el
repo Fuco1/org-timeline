@@ -67,6 +67,11 @@
   :type 'integer
   :group 'org-timeline)
 
+(defvar org-timeline-height 0
+  "Computed height (number of lines) of the timeline."
+  :type 'integer
+  :group 'org-timeline)
+
 (defface org-timeline-block
   '((t (:inherit secondary-selection)))
   "Face used for printing blocks with time range information.
@@ -121,6 +126,15 @@ Return new copy of STRING."
       (put-text-property 0 current-offset 'font-lock-face 'org-timeline-elapsed string-copy))
     string-copy))
 
+(defun org-timeline--move-to-task ()
+  "Move to a blocks correponding task."
+  (interactive
+   (let ((line (get-text-property (point) 'org-timeline-task-line)))
+     (when org-timeline-prepend
+       (setq line (+ line org-timeline-height)))
+     (goto-line line)
+     (search-forward (get-text-property (point) 'time)))))
+
 (defun org-timeline--list-tasks ()
   "Build the list of tasks to display."
   (let* ((tasks nil)
@@ -133,7 +147,8 @@ Return new copy of STRING."
                    (type (org-get-at-bol 'type)))
         (when (member type (list "scheduled" "clock" "timestamp"))
           (let ((duration (org-get-at-bol 'duration))
-                (txt (org-get-at-bol 'txt)))
+                (txt (org-get-at-bol 'txt))
+                (line (line-number-at-pos)))
             (when (and (numberp duration)
                        (< duration 0))
               (cl-incf duration 1440))
@@ -145,7 +160,7 @@ Return new copy of STRING."
                           current-time))
                    (face (org-timeline--get-face)))
               (when (>= beg start-offset)
-                (push (list beg end face txt) tasks)))))))
+                (push (list beg end face txt line) tasks)))))))
     (nreverse tasks)))
 
 (defun org-timeline--generate-timeline ()
@@ -172,7 +187,7 @@ Return new copy of STRING."
         (with-temp-buffer
           (insert timeline)
           (-each tasks
-            (-lambda ((beg end face txt))
+            (-lambda ((beg end face txt line))
               (while (get-text-property (get-start-pos current-line beg) 'org-timeline-occupied)
                 (cl-incf current-line)
                 (when (> (get-start-pos current-line beg) (point-max))
@@ -181,10 +196,14 @@ Return new copy of STRING."
                     (insert "\n" slotline))))
               (let ((start-pos (get-start-pos current-line beg))
                     (end-pos (get-end-pos current-line end))
+                    (move-to-task-map (make-sparse-keymap))
                     (props (list 'font-lock-face face
                                  'org-timeline-occupied t
                                  'mouse-face 'highlight
-                                 'help-echo txt)))
+                                 'help-echo txt
+                                 'org-timeline-task-line line)))
+                (define-key move-to-task-map [mouse-1] 'org-timeline--move-to-task)
+                (put-text-property start-pos end-pos 'keymap move-to-task-map)
                 (add-text-properties start-pos end-pos props))
               (setq current-line 1)))
           (buffer-string))))))
@@ -198,9 +217,11 @@ Return new copy of STRING."
                   (not (eobp)))
         (forward-line)))
     (forward-line)
-    (let ((inhibit-read-only t))
+    (let ((inhibit-read-only t)
+          (start-line (line-number-at-pos)))
       (insert (org-timeline--generate-timeline))
-      (insert (propertize (concat "\n" (make-string (/ (window-width) 2) ?─)) 'face 'org-time-grid) "\n"))
+      (insert (propertize (concat "\n" (make-string (/ (window-width) 2) ?─)) 'face 'org-time-grid) "\n")
+      (setq org-timeline-height (- (line-number-at-pos) start-line)))
     ;; enable `font-lock-mode' in agenda view to display the "chart"
     (font-lock-mode)))
 
