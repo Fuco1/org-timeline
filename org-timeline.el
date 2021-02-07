@@ -252,8 +252,9 @@ Return new copy of STRING."
     (let ((inhibit-read-only t))
       (cursor-sensor-mode 1)
       (setq org-timeline-first-line (line-number-at-pos))
+      (insert (propertize (concat (make-string (window-width) ?─)) 'face 'org-time-grid) "\n")
       (insert (org-timeline--generate-timeline))
-      (insert (propertize (concat "\n" (make-string (/ (window-width) 2) ?─)) 'face 'org-time-grid 'org-timeline-end t) "\n")
+      (insert (propertize (concat "\n" (make-string (window-width) ?─)) 'face 'org-time-grid 'org-timeline-end t) "\n")
       (setq org-timeline-height (- (line-number-at-pos) org-timeline-first-line)))
     ;; enable `font-lock-mode' in agenda view to display the "chart"
     (font-lock-mode)))
