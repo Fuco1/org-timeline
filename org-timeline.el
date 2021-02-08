@@ -157,10 +157,9 @@ Return new copy of STRING."
   "Move to a blocks correponding task."
   (interactive
    (let ((line (get-text-property (point) 'org-timeline-task-line)))
-     (org-timeline--clear-info)
      (when org-timeline-prepend
        (setq line (+ line org-timeline-height)))
-     (goto-line (- line 1))
+     (goto-line line)
      (search-forward (get-text-property (point) 'time)))))
 
 (defun org-timeline--list-tasks ()
@@ -234,8 +233,7 @@ Return new copy of STRING."
                                  'help-echo (lambda (w obj pos)
                                               (org-timeline--hover-info w txt)
                                               txt) ;; the lambda will be called on block hover
-                                 'org-timeline-task-line line
-                                 'cursor-sensor-functions '(org-timeline--display-info))))
+                                 'org-timeline-task-line line)))
                 (add-text-properties start-pos end-pos props))
               (setq current-line 1)))
           (buffer-string))))))
