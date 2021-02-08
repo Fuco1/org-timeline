@@ -285,7 +285,8 @@ Return new copy of STRING."
                 ;; cursor is now at beginning of the task's day's line
                 (when (and (get-text-property (get-start-pos (line-number-at-pos) beg) 'org-timeline-occupied) ;; overlap
                            org-timeline-overlap-in-new-line
-                           (not (string= type "clock"))) ;; clocks shouldn't overlap
+                           (or (not (string= type "clock"))
+                               (and (string= type "clock") (not org-timeline-clocked-in-new-line)))) ;; clocks shouldn't overlap, unless they don't have their own line
                   (forward-line)
                   (while (and (get-text-property (get-start-pos (line-number-at-pos) beg) 'org-timeline-occupied)
                               (get-text-property (point) 'org-timeline-overlap-line))
