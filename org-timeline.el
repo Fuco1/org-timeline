@@ -261,10 +261,8 @@ Return new copy of STRING."
         (with-temp-buffer
           (insert hourline)
           (dolist (task tasks)
-              (let* ((beg (org-timeline-task-beg task))
+              (let ((beg (org-timeline-task-beg task))
                     (end (org-timeline-task-end task))
-                    (beg-overlap beg)
-                    (end-overlap beg)
                     (info (org-timeline-task-info task))
                     (line (org-timeline-task-line task))
                     (day (org-timeline-task-day task))
