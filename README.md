@@ -25,4 +25,4 @@ You can use custom color for a task by adding the property `TIMELINE_FACE` with 
 - [x] Add faces instead of colors
 - [X] Make "midnight"/change-of-day configurable (currently 5 AM)
 - [X] Add a tooltip showing the task description/name
-- [ ] Make the blocks navigable to the task
+- [X] Make the blocks navigable to the task
