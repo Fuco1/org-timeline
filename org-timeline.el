@@ -73,7 +73,7 @@
 (defvar org-timeline-height 0
   "Computed height (number of lines) of the timeline.")
 
-(defconst org-timeline-current-info nil
+(defvar org-timeline-current-info nil
   "Current displayed info. Used to fix flickering of info.")
 
 (defface org-timeline-block
