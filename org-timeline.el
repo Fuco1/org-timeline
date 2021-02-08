@@ -73,7 +73,12 @@
   :group 'org-timeline)
 
 (defcustom org-timeline-clocked-in-new-line t
-  "Option to render clocked items in new line"
+  "Option to render clocked items in new line."
+  :type 'boolean
+  :group 'org-timeline)
+
+(defcustom org-timeline-overlap-in-new-line nil
+  "Option to render overlapping blocks in new line."
   :type 'boolean
   :group 'org-timeline)
 
@@ -118,6 +123,11 @@ have an active timestamp with a range."
 Clocked blocks appear in the agenda when `org-agenda-log-mode' is
 activated."
   :group 'org-timeline-faces)
+
+(defface org-timeline-overlap
+  '((t (:background "dark red")))
+   "Face used for printing overlapping blocks."
+   :group 'org-timeline-faces)
 
 
 (defmacro org-timeline-with-each-line (&rest body)
@@ -251,8 +261,10 @@ Return new copy of STRING."
         (with-temp-buffer
           (insert hourline)
           (dolist (task tasks)
-              (let ((beg (org-timeline-task-beg task))
+              (let* ((beg (org-timeline-task-beg task))
                     (end (org-timeline-task-end task))
+                    (beg-overlap beg)
+                    (end-overlap beg)
                     (info (org-timeline-task-info task))
                     (line (org-timeline-task-line task))
                     (day (org-timeline-task-day task))
@@ -273,28 +285,53 @@ Return new copy of STRING."
                                                (list day))
                                              "\n"))))
                 ;; cursor is now at beginning of the task's day's line
-                (when (and (string= type "clock") ;; new line for clocked day
+                (when (and (get-text-property (get-start-pos (line-number-at-pos) beg) 'org-timeline-occupied) ;; overlap
+                           org-timeline-overlap-in-new-line
+                           (not (string= type "clock"))) ;; clocks shouldn't overlap
+                  (forward-line)
+                  (while (and (get-text-property (get-start-pos (line-number-at-pos) beg) 'org-timeline-occupied)
+                              (get-text-property (point) 'org-timeline-overlap-line))
+                    (forward-line))
+                  (when (eq (point) (point-max))
+                    (insert "\n"))
+                  (when (not (get-text-property (point) 'org-timeline-overlap-line))
+                    (insert (propertize (concat "    " slotline)
+                                        'org-timeline-line-day day
+                                        'org-timeline-overlap-line t))
+                    (print (buffer-substring-no-properties 1 (point-max)))
+                    (when (eq (save-excursion (forward-line)) 0) ;; there is a clock line
+                      (insert "\n"))))
+                (when (and (string= type "clock")
                            org-timeline-show-clocked
                            org-timeline-clocked-in-new-line)
-                  (forward-line)
-                  (when (eq (point) (point-max)) ;; today was last day with line
-                    (insert "\n"))
-                  (unless (get-text-property (point) 'org-timeline-clocked-line)
-                    (insert (propertize (concat "  $ " slotline)
-                                        'org-timeline-line-day day
-                                         'org-timeline-clocked-line t))))
-                (print (buffer-substring-no-properties 1 (point-max)))
-                (let ((start-pos (get-start-pos (line-number-at-pos) beg)) ;; + 4 because the week's day is shown
-                      (end-pos (get-end-pos (line-number-at-pos) end))
-                      (props (list 'font-lock-face face
-                                  'org-timeline-occupied t
-                                  'mouse-face 'highlight
-                                  'keymap move-to-task-map
-                                  'task-info info
-                                  'help-echo (lambda (w obj pos)
-                                                (org-timeline--hover-info w info)
-                                                info) ;; the lambda will be called on block hover
-                                   'org-timeline-task-line line)))
+                  (if (get-text-property (point) 'org-timeline-clocks-open-for-day)
+                      (while (not (get-text-property (point) 'org-timeline-clock-line))
+                        (forward-line))
+                    (progn
+                      (put-text-property (point) (line-end-position) 'org-timeline-clocks-open-for-day t)
+                      (forward-line)
+                      (while (get-text-property (point) 'org-timeline-overlap-line) ;; go after overlap lines
+                        (forward-line))
+                      (when (eq (point) (point-max))
+                        (insert "\n"))
+                      (unless (get-text-property (point) 'org-timeline-clock-line)
+                        (insert (propertize (concat "  $ " slotline)
+                                            'org-timeline-line-day day
+                                             'org-timeline-clock-line t))))))
+                (let* ((start-pos (get-start-pos (line-number-at-pos) beg)) ;; + 4 because the week's day is shown
+                       (end-pos (get-end-pos (line-number-at-pos) end))
+                       (props (list 'font-lock-face (if (or (get-text-property start-pos 'org-timeline-occupied)
+                                                            (get-text-property end-pos 'org-timeline-occupied))
+                                                        'org-timeline-overlap
+                                                      face) ;; code from git user deopurkar
+                                     'org-timeline-occupied t
+                                     'mouse-face 'highlight
+                                     'keymap move-to-task-map
+                                     'task-info info
+                                     'help-echo (lambda (w obj pos)
+                                                  (org-timeline--hover-info w info)
+                                                  info) ;; the lambda will be called on block hover
+                                     'org-timeline-task-line line)))
                   (unless (and (string= type "clock")
                                (not org-timeline-show-clocked))
                     (add-text-properties start-pos end-pos props)))
