@@ -67,6 +67,16 @@
   :type 'integer
   :group 'org-timeline)
 
+(defcustom org-timeline-show-clocked t
+  "Option to show or hide clocked items."
+  :type 'boolean
+  :group 'org-timeline)
+
+(defcustom org-timeline-clocked-in-new-line t
+  "Option to render clocked items in new line"
+  :type 'boolean
+  :group 'org-timeline)
+
 (defvar org-timeline-first-line 0
   "Computer first line of the timeline in the buffer.")
 
@@ -75,6 +85,7 @@
 
 (defvar org-timeline-current-info nil
   "Current displayed info. Used to fix flickering of info.")
+
 
 (cl-defstruct org-timeline-task
   beg  ;; offset in timeline (beginning of event)
@@ -85,6 +96,7 @@
   day  ;; day (gregorian list i.e `(month day year)`) when the task appears
   type ;; type of the task ("scheduled", "clocked" ...)
   )
+
 
 (defface org-timeline-block
   '((t (:inherit secondary-selection)))
@@ -250,7 +262,7 @@ Return new copy of STRING."
                 (while (and (not (eq (get-text-property (point) 'org-timeline-line-day) day))
                             (not (eq (forward-line) 1)))) ;; while task's day line not reached in timeline
                 (unless (eq (get-text-property (point) 'org-timeline-line-day) day)
-                  (insert (concat "\n"
+                  (insert (concat "\n" ;; creating the necessary lines, up to the current task's day
                                   (mapconcat (lambda (line-day)
                                                (propertize (concat (calendar-day-name (mod line-day 7) t t) ;; by git user deopurkar
                                                                    " "
@@ -261,6 +273,17 @@ Return new copy of STRING."
                                                (list day))
                                              "\n"))))
                 ;; cursor is now at beginning of the task's day's line
+                (when (and (string= type "clock") ;; new line for clocked day
+                           org-timeline-show-clocked
+                           org-timeline-clocked-in-new-line)
+                  (forward-line)
+                  (when (eq (point) (point-max)) ;; today was last day with line
+                    (insert "\n"))
+                  (unless (get-text-property (point) 'org-timeline-clocked-line)
+                    (insert (propertize (concat "  $ " slotline)
+                                        'org-timeline-line-day day
+                                         'org-timeline-clocked-line t))))
+                (print (buffer-substring-no-properties 1 (point-max)))
                 (let ((start-pos (get-start-pos (line-number-at-pos) beg)) ;; + 4 because the week's day is shown
                       (end-pos (get-end-pos (line-number-at-pos) end))
                       (props (list 'font-lock-face face
@@ -272,7 +295,9 @@ Return new copy of STRING."
                                                 (org-timeline--hover-info w info)
                                                 info) ;; the lambda will be called on block hover
                                    'org-timeline-task-line line)))
-                  (add-text-properties start-pos end-pos props))
+                  (unless (and (string= type "clock")
+                               (not org-timeline-show-clocked))
+                    (add-text-properties start-pos end-pos props)))
                 (setq current-line 1)))
           (buffer-string))))))
 
