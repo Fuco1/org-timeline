@@ -76,6 +76,15 @@
 (defvar org-timeline-current-info nil
   "Current displayed info. Used to fix flickering of info.")
 
+(cl-defstruct org-timeline-task
+  beg  ;; offset in timeline (beginning of event)
+  end  ;; offset in timeline (end of event)
+  info ;; info line for the corresponding task
+  line ;; line where this task is displayed in the agenda buffer
+  face ;; the task block's face
+  day  ;; day (gregorian list i.e `(month day year)`) when the task appears
+  )
+
 (defface org-timeline-block
   '((t (:inherit secondary-selection)))
   "Face used for printing blocks with time range information.
@@ -179,7 +188,7 @@ Return new copy of STRING."
                    (type (org-get-at-bol 'type)))
         (when (member type (list "scheduled" "clock" "timestamp"))
           (let ((duration (org-get-at-bol 'duration))
-                (txt (buffer-substring (line-beginning-position) (line-end-position)))
+                (info (buffer-substring (line-beginning-position) (line-end-position)))
                 (line (line-number-at-pos)))
             (when (and (numberp duration)
                        (< duration 0))
@@ -190,9 +199,16 @@ Return new copy of STRING."
                    (end (if duration
                             (round (+ beg duration))
                           current-time))
-                   (face (org-timeline--get-face)))
+                   (face (org-timeline--get-face))
+                   (day (calendar-gregorian-from-absolute (org-get-at-bol 'day))))
               (when (>= beg start-offset)
-                (push (list beg end face txt line) tasks)))))))
+                (push (make-org-timeline-task
+                       :beg beg
+                       :end end
+                       :face face
+                       :info info
+                       :line line
+                       :day day) tasks)))))))
     (nreverse tasks)))
 
 (defun org-timeline--generate-timeline ()
@@ -220,8 +236,13 @@ Return new copy of STRING."
         (define-key move-to-task-map [mouse-1] 'org-timeline--move-to-task)
         (with-temp-buffer
           (insert timeline)
-          (-each tasks
-            (-lambda ((beg end face txt line))
+          (dolist (task tasks)
+            (let ((beg (org-timeline-task-beg task))
+                  (end (org-timeline-task-end task))
+                  (info (org-timeline-task-info task))
+                  (line (org-timeline-task-line task))
+                  (day (org-timeline-task-day task))
+                  (face (org-timeline-task-face task)))
               (while (get-text-property (get-start-pos current-line beg) 'org-timeline-occupied)
                 (cl-incf current-line)
                 (when (> (get-start-pos current-line beg) (point-max))
@@ -234,10 +255,10 @@ Return new copy of STRING."
                                  'org-timeline-occupied t
                                  'mouse-face 'highlight
                                  'keymap move-to-task-map
-                                 'txt txt
+                                 'task-info info
                                  'help-echo (lambda (w obj pos)
-                                              (org-timeline--hover-info w txt)
-                                              txt) ;; the lambda will be called on block hover
+                                              (org-timeline--hover-info w info)
+                                              info) ;; the lambda will be called on block hover
                                  'org-timeline-task-line line)))
                 (add-text-properties start-pos end-pos props))
               (setq current-line 1)))
