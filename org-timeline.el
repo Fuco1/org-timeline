@@ -226,7 +226,6 @@ Return new copy of STRING."
                     (insert "\n" slotline))))
               (let ((start-pos (get-start-pos current-line beg))
                     (end-pos (get-end-pos current-line end))
-                    (move-to-task-map (make-sparse-keymap))
                     (props (list 'font-lock-face face
                                  'org-timeline-occupied t
                                  'mouse-face 'highlight
