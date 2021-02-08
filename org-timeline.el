@@ -211,7 +211,9 @@ Return new copy of STRING."
          (tasks (org-timeline--list-tasks)))
     (cl-labels ((get-start-pos (current-line beg) (+ 1 (* current-line (1+ (length slotline))) (/ (- beg start-offset) 10)))
                 (get-end-pos (current-line end) (+ 1 (* current-line (1+ (length slotline))) (/ (- end start-offset) 10))))
-      (let ((current-line 1))
+      (let ((current-line 1)
+            (move-to-task-map (make-sparse-keymap)))
+        (define-key move-to-task-map [mouse-1] 'org-timeline--move-to-task)
         (with-temp-buffer
           (insert timeline)
           (-each tasks
@@ -224,18 +226,16 @@ Return new copy of STRING."
                     (insert "\n" slotline))))
               (let ((start-pos (get-start-pos current-line beg))
                     (end-pos (get-end-pos current-line end))
-                    (move-to-task-map (make-sparse-keymap))
                     (props (list 'font-lock-face face
                                  'org-timeline-occupied t
                                  'mouse-face 'highlight
+                                 'keymap move-to-task-map
                                  'txt txt
                                  'help-echo (lambda (w obj pos)
                                               (org-timeline--hover-info w txt)
                                               txt) ;; the lambda will be called on block hover
                                  'org-timeline-task-line line
-                                  'cursor-sensor-functions '(org-timeline--display-info))))
-                (define-key move-to-task-map [mouse-1] 'org-timeline--move-to-task)
-                (put-text-property start-pos end-pos 'keymap move-to-task-map)
+                                 'cursor-sensor-functions '(org-timeline--display-info))))
                 (add-text-properties start-pos end-pos props))
               (setq current-line 1)))
           (buffer-string))))))
