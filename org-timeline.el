@@ -152,10 +152,9 @@ Return new copy of STRING."
         (let ((inhibit-read-only t)
               (info-keymap (make-sparse-keymap)))
           (define-key info-keymap [mouse-1] 'org-agenda-goto)
-          (define-key info-keymap [mouse-2] 'org-agenda-goto)
-          (define-key info-keymap [mouse-3] 'org-find-file-at-mouse)
+          (define-key info-keymap [mouse-2] 'org-find-file-at-mouse)
           (put-text-property 0 (string-width txt) 'keymap info-keymap txt)
-          (put-text-property 0 (string-width txt) 'help-echo "mouse-1, mouse-2 or RET jump to org file." txt)
+          (put-text-property 0 (string-width txt) 'help-echo "mouse-1 jump to org file." txt)
           (insert txt)
           (insert "\n"))))))
 
