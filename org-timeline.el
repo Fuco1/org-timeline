@@ -83,6 +83,7 @@
   line ;; line where this task is displayed in the agenda buffer
   face ;; the task block's face
   day  ;; day (gregorian list i.e `(month day year)`) when the task appears
+  type ;; type of the task ("scheduled", "clocked" ...)
   )
 
 (defface org-timeline-block
@@ -200,7 +201,7 @@ Return new copy of STRING."
                             (round (+ beg duration))
                           current-time))
                    (face (org-timeline--get-face))
-                   (day (calendar-gregorian-from-absolute (org-get-at-bol 'day))))
+                   (day (org-get-at-bol 'day)))
               (when (>= beg start-offset)
                 (push (make-org-timeline-task
                        :beg beg
@@ -208,7 +209,8 @@ Return new copy of STRING."
                        :face face
                        :info info
                        :line line
-                       :day day) tasks)))))))
+                       :day day
+                       :type type) tasks)))))))
     (nreverse tasks)))
 
 (defun org-timeline--generate-timeline ()
@@ -220,48 +222,58 @@ Return new copy of STRING."
          (slotline (org-timeline--add-elapsed-face
                     "|     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |"
                     current-offset))
-         (hourline (org-timeline--add-elapsed-face
-                    (concat "|"
-                            (mapconcat (lambda (x) (format "%02d:00" (mod x 24)))
-                                       (number-sequence org-timeline-start-hour (+ org-timeline-start-hour 23))
-                                       "|")
-                            "|")
-                    current-offset))
-         (timeline (concat hourline "\n" slotline))
+         (hourline (concat "    "
+                           (org-timeline--add-elapsed-face
+                            (concat "|"
+                                    (mapconcat (lambda (x) (format "%02d:00" (mod x 24)))
+                                               (number-sequence org-timeline-start-hour (+ org-timeline-start-hour 23))
+                                               "|")
+                                    "|")
+                            current-offset)))
          (tasks (org-timeline--list-tasks)))
-    (cl-labels ((get-start-pos (current-line beg) (+ 1 (* current-line (1+ (length slotline))) (/ (- beg start-offset) 10)))
-                (get-end-pos (current-line end) (+ 1 (* current-line (1+ (length slotline))) (/ (- end start-offset) 10))))
+    (cl-labels ((get-start-pos (current-line beg) (+ 5 (* (- current-line 1) (+ 5 (length slotline))) (/ (- beg start-offset) 10)))
+                (get-end-pos (current-line end) (+ 5 (* (- current-line 1) (+ 5 (length slotline))) (/ (- end start-offset) 10))))
       (let ((current-line 1)
             (move-to-task-map (make-sparse-keymap)))
         (define-key move-to-task-map [mouse-1] 'org-timeline--move-to-task)
         (with-temp-buffer
-          (insert timeline)
+          (insert hourline)
           (dolist (task tasks)
-            (let ((beg (org-timeline-task-beg task))
-                  (end (org-timeline-task-end task))
-                  (info (org-timeline-task-info task))
-                  (line (org-timeline-task-line task))
-                  (day (org-timeline-task-day task))
-                  (face (org-timeline-task-face task)))
-              (while (get-text-property (get-start-pos current-line beg) 'org-timeline-occupied)
-                (cl-incf current-line)
-                (when (> (get-start-pos current-line beg) (point-max))
-                  (save-excursion
-                    (goto-char (point-max))
-                    (insert "\n" slotline))))
-              (let ((start-pos (get-start-pos current-line beg))
-                    (end-pos (get-end-pos current-line end))
-                    (props (list 'font-lock-face face
-                                 'org-timeline-occupied t
-                                 'mouse-face 'highlight
-                                 'keymap move-to-task-map
-                                 'task-info info
-                                 'help-echo (lambda (w obj pos)
-                                              (org-timeline--hover-info w info)
-                                              info) ;; the lambda will be called on block hover
-                                 'org-timeline-task-line line)))
-                (add-text-properties start-pos end-pos props))
-              (setq current-line 1)))
+              (let ((beg (org-timeline-task-beg task))
+                    (end (org-timeline-task-end task))
+                    (info (org-timeline-task-info task))
+                    (line (org-timeline-task-line task))
+                    (day (org-timeline-task-day task))
+                    (face (org-timeline-task-face task))
+                    (type (org-timeline-task-type task)))
+                (goto-char 1)
+                (while (and (not (eq (get-text-property (point) 'org-timeline-line-day) day))
+                            (not (eq (forward-line) 1)))) ;; while task's day line not reached in timeline
+                (unless (eq (get-text-property (point) 'org-timeline-line-day) day)
+                  (insert (concat "\n"
+                                  (mapconcat (lambda (line-day)
+                                               (propertize (concat (calendar-day-name (mod line-day 7) t t) ;; by git user deopurkar
+                                                                   " "
+                                                                   slotline)
+                                                           'org-timeline-line-day line-day))
+                                             (if-let ((last-day (get-text-property (point) 'org-timeline-line-day)))
+                                                 (number-sequence (+ 1 last-day))
+                                               (list day))
+                                             "\n"))))
+                ;; cursor is now at beginning of the task's day's line
+                (let ((start-pos (get-start-pos (line-number-at-pos) beg)) ;; + 4 because the week's day is shown
+                      (end-pos (get-end-pos (line-number-at-pos) end))
+                      (props (list 'font-lock-face face
+                                  'org-timeline-occupied t
+                                  'mouse-face 'highlight
+                                  'keymap move-to-task-map
+                                  'task-info info
+                                  'help-echo (lambda (w obj pos)
+                                                (org-timeline--hover-info w info)
+                                                info) ;; the lambda will be called on block hover
+                                   'org-timeline-task-line line)))
+                  (add-text-properties start-pos end-pos props))
+                (setq current-line 1)))
           (buffer-string))))))
 
 (defun org-timeline-insert-timeline ()
