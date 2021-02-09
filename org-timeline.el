@@ -373,7 +373,7 @@ Return new copy of STRING."
           (goto-char (point-max))
           (unless (eq (length tasks) 0) ;; no info if empty timeline
             (insert "\n" (if (eq next-task nil)
-                             (propertize "  no incoming event" 'org-timeline-info t)
+                             (propertize "  no incoming event" 'org-timeline-info-line t)
                            (org-timeline--decorate-info (org-timeline-task-info next-task)))))
           (buffer-string))))))
 
