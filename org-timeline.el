@@ -351,7 +351,8 @@ Return new copy of STRING."
                        (props (list 'font-lock-face (if (or (get-text-property start-pos 'org-timeline-occupied)
                                                             (get-text-property end-pos 'org-timeline-occupied)) ;; code from git user deopurkar
                                                         'org-timeline-overlap
-                                                      (if (and (eq (org-timeline-task-info nearest-task) info)
+                                                      (if (and (not (eq nearest-task nil))
+                                                               (eq (org-timeline-task-info nearest-task) info)
                                                                org-timeline-emphasize-nearest-block)
                                                           'org-timeline-nearest-block
                                                         face))
