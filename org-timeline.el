@@ -277,7 +277,8 @@ Return new copy of STRING."
           (let ((beg (org-timeline-task-beg task))
                 (end (org-timeline-task-end task)))
             (when (and (eq today (org-timeline-task-day task))
-                        (or (and (<= beg current-time)
+                       (not (string= (org-timeline-task-type task) "clock"))
+                       (or (and (<= beg current-time)
                                 (>= end current-time)) ;; task is happening now
                             (or (eq nearest-task nil)
                                 (or (and (< end current-time)
