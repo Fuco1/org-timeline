@@ -82,6 +82,11 @@
   :type 'boolean
   :group 'org-timeline)
 
+(defcustom org-timeline-emphasize-nearest-block nil
+  "When non-nil, apply org-timeline-nearest-block face to the nearest block."
+  :type 'boolean
+  :group 'org-timeline)
+
 (defvar org-timeline-first-line 0
   "Computed first line of the timeline in the buffer.")
 
@@ -127,6 +132,13 @@ activated."
 (defface org-timeline-overlap
   '((t (:background "dark red")))
    "Face used for printing overlapping blocks."
+   :group 'org-timeline-faces)
+
+(defface org-timeline-nearest-block
+  '((t (:background "dark olive green")))
+   "Face used for the current, next or previous block.
+
+Only used when org-timeline-emphasize-nearest-block is non-nil."
    :group 'org-timeline-faces)
 
 
@@ -256,8 +268,25 @@ Return new copy of STRING."
     (cl-labels ((get-start-pos (current-line beg) (+ 5 (* (- current-line 1) (+ 5 (length slotline))) (/ (- beg start-offset) 10)))
                 (get-end-pos (current-line end) (+ 5 (* (- current-line 1) (+ 5 (length slotline))) (/ (- end start-offset) 10))))
       (let ((current-line 1)
-            (move-to-task-map (make-sparse-keymap)))
+            (move-to-task-map (make-sparse-keymap))
+            (nearest-task nil)
+            (today (calendar-absolute-from-gregorian (calendar-current-date))))
         (define-key move-to-task-map [mouse-1] 'org-timeline--move-to-task)
+        ;; find the nearest task
+        (dolist (task tasks)
+          (let ((beg (org-timeline-task-beg task))
+                (end (org-timeline-task-end task)))
+            (when (and (eq today (org-timeline-task-day task))
+                        (or (and (<= beg current-time)
+                                (>= end current-time)) ;; task is happening now
+                            (or (eq nearest-task nil)
+                                (or (and (< end current-time)
+                                        (> end (org-timeline-task-end nearest-task))) ;;
+                                    (and (> beg current-time)
+                                        (or (< beg (org-timeline-task-beg nearest-task))
+                                            (< (org-timeline-task-end nearest-task) current-time)))))))
+              ;; task is nearer current time than current nearest-task
+              (setq nearest-task task))))
         (with-temp-buffer
           (insert hourline)
           (dolist (task tasks)
@@ -320,9 +349,12 @@ Return new copy of STRING."
                 (let* ((start-pos (get-start-pos (line-number-at-pos) beg)) ;; + 4 because the week's day is shown
                        (end-pos (get-end-pos (line-number-at-pos) end))
                        (props (list 'font-lock-face (if (or (get-text-property start-pos 'org-timeline-occupied)
-                                                            (get-text-property end-pos 'org-timeline-occupied))
+                                                            (get-text-property end-pos 'org-timeline-occupied)) ;; code from git user deopurkar
                                                         'org-timeline-overlap
-                                                      face) ;; code from git user deopurkar
+                                                      (if (and (eq (org-timeline-task-info nearest-task) info)
+                                                               org-timeline-emphasize-nearest-block)
+                                                          'org-timeline-nearest-block
+                                                        face))
                                      'org-timeline-occupied t
                                      'mouse-face 'highlight
                                      'keymap move-to-task-map
@@ -333,36 +365,15 @@ Return new copy of STRING."
                                      'org-timeline-task-line line)))
                   (unless (and (string= type "clock")
                                (not org-timeline-show-clocked))
-                    (add-text-properties start-pos end-pos props)))
-                (setq current-line 1)))
-          ;; display the nearest (to current time) block's info
+                    (add-text-properties start-pos end-pos props)))))
+          ;; display the nearest block's info
           ;; empty info line if no event today, unless timeline is completely empty
           (goto-char (point-max))
-          (let ((today (calendar-absolute-from-gregorian (calendar-current-date)))
-                (nearest-task nil))
-            (dolist (task tasks)
-              (let ((beg (org-timeline-task-beg task))
-                    (end (org-timeline-task-end task)))
-                (when (and (eq today (org-timeline-task-day task))
-                           (or (and (<= beg current-time)
-                                    (>= end current-time)) ;; task is happening now
-                               (or (eq nearest-task nil)
-                                   (or (and (< end current-time)
-                                            (> end (org-timeline-task-end nearest-task))) ;;
-                                       (and (> beg current-time)
-                                            (or (< beg (org-timeline-task-beg nearest-task))
-                                                (< (org-timeline-task-end nearest-task) current-time)))))))
-                  ;; task is nearer current time than current nearest-task
-                  (setq nearest-task task)
-                  (print (org-timeline-task-beg nearest-task))
-                  (print (org-timeline-task-end nearest-task))
-                  (print "---"))))
-            (print current-time)
-            (setq org-timeline-current-info (if (eq nearest-task nil) "" (org-timeline-task-info nearest-task)))
-            (unless (eq (length tasks) 0)
-                (insert "\n" org-timeline-current-info)))
+          (setq org-timeline-current-info (if (eq nearest-task nil) "" (org-timeline-task-info nearest-task)))
+          (unless (eq (length tasks) 0)
+            (insert "\n" org-timeline-current-info))
           (buffer-string))))))
-
+ 
 (defun org-timeline-insert-timeline ()
   "Insert graphical timeline into agenda buffer."
   (unless (buffer-narrowed-p)
