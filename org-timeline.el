@@ -82,8 +82,8 @@
   :type 'boolean
   :group 'org-timeline)
 
-(defcustom org-timeline-emphasize-nearest-block nil
-  "When non-nil, apply org-timeline-nearest-block face to the nearest block."
+(defcustom org-timeline-emphasize-next-block nil
+  "When non-nil, apply org-timeline-next-block face to the next block."
   :type 'boolean
   :group 'org-timeline)
 
@@ -134,11 +134,11 @@ activated."
    "Face used for printing overlapping blocks."
    :group 'org-timeline-faces)
 
-(defface org-timeline-nearest-block
+(defface org-timeline-next-block
   '((t (:background "dark olive green")))
    "Face used for the current, next or previous block.
 
-Only used when org-timeline-emphasize-nearest-block is non-nil."
+Only used when org-timeline-emphasize-next-block is non-nil."
    :group 'org-timeline-faces)
 
 
@@ -269,25 +269,25 @@ Return new copy of STRING."
                 (get-end-pos (current-line end) (+ 5 (* (- current-line 1) (+ 5 (length slotline))) (/ (- end start-offset) 10))))
       (let ((current-line 1)
             (move-to-task-map (make-sparse-keymap))
-            (nearest-task nil)
+            (next-task nil)
             (today (calendar-absolute-from-gregorian (calendar-current-date))))
         (define-key move-to-task-map [mouse-1] 'org-timeline--move-to-task)
-        ;; find the nearest task
+        ;; find the next task
         (dolist (task tasks)
-          (let ((beg (org-timeline-task-beg task))
-                (end (org-timeline-task-end task)))
+          (let* ((beg (org-timeline-task-beg task))
+                 (end (org-timeline-task-end task)))
             (when (and (eq today (org-timeline-task-day task))
                        (not (string= (org-timeline-task-type task) "clock"))
                        (or (and (<= beg current-time)
                                 (>= end current-time)) ;; task is happening now
-                            (or (eq nearest-task nil)
+                            (or (eq next-task nil)
                                 (or (and (< end current-time)
-                                        (> end (org-timeline-task-end nearest-task))) ;;
+                                        (> end (org-timeline-task-end next-task))) ;;
                                     (and (> beg current-time)
-                                        (or (< beg (org-timeline-task-beg nearest-task))
-                                            (< (org-timeline-task-end nearest-task) current-time)))))))
+                                        (or (< beg (org-timeline-task-beg next-task))
+                                            (< (org-timeline-task-end next-task) current-time)))))))
               ;; task is nearer current time than current nearest-task
-              (setq nearest-task task))))
+              (setq next-task task))))
         (with-temp-buffer
           (insert hourline)
           (dolist (task tasks)
@@ -352,10 +352,10 @@ Return new copy of STRING."
                        (props (list 'font-lock-face (if (or (get-text-property start-pos 'org-timeline-occupied)
                                                             (get-text-property end-pos 'org-timeline-occupied)) ;; code from git user deopurkar
                                                         'org-timeline-overlap
-                                                      (if (and (not (eq nearest-task nil))
-                                                               (eq (org-timeline-task-info nearest-task) info)
-                                                               org-timeline-emphasize-nearest-block)
-                                                          'org-timeline-nearest-block
+                                                      (if (and (not (eq next-task nil))
+                                                               (eq (org-timeline-task-info next-task) info)
+                                                               org-timeline-emphasize-next-block)
+                                                          'org-timeline-next-block
                                                         face))
                                      'org-timeline-occupied t
                                      'mouse-face 'highlight
@@ -368,11 +368,10 @@ Return new copy of STRING."
                   (unless (and (string= type "clock")
                                (not org-timeline-show-clocked))
                     (add-text-properties start-pos end-pos props)))))
-          ;; display the nearest block's info
-          ;; empty info line if no event today, unless timeline is completely empty
+          ;; display the next block's info
           (goto-char (point-max))
-          (setq org-timeline-current-info (if (eq nearest-task nil) " " (org-timeline-task-info nearest-task)))
-          (unless (eq (length tasks) 0)
+          (setq org-timeline-current-info (if (eq next-task nil) "  no incoming event" (org-timeline-task-info next-task)))
+          (unless (eq (length tasks) 0) ;; no info if empty timeline
             (insert "\n" org-timeline-current-info))
           (buffer-string))))))
  
