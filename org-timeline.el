@@ -371,7 +371,7 @@ Return new copy of STRING."
           ;; display the nearest block's info
           ;; empty info line if no event today, unless timeline is completely empty
           (goto-char (point-max))
-          (setq org-timeline-current-info (if (eq nearest-task nil) "" (org-timeline-task-info nearest-task)))
+          (setq org-timeline-current-info (if (eq nearest-task nil) " " (org-timeline-task-info nearest-task)))
           (unless (eq (length tasks) 0)
             (insert "\n" org-timeline-current-info))
           (buffer-string))))))
