@@ -174,33 +174,37 @@ Return new copy of STRING."
       (put-text-property 0 current-offset 'font-lock-face 'org-timeline-elapsed string-copy))
     string-copy))
 
-(defun org-timeline--clear-info ()
-  "Clear the info line"
+(defun org-timeline--kill-info ()
+  "Kill the info line"
   (save-excursion
     (goto-line org-timeline-first-line)
-    (forward-line (- org-timeline-height 2))
-    (let ((inhibit-read-only t))
-      (while (not (get-text-property (point) 'org-timeline-end))
+    (while (and (not (get-text-property (point) 'org-timeline-info-line))
+                (eq (forward-line) 0))) ;; go to info line
+    (unless (eq (point) (point-max)) ;; info line not found
+      (let ((inhibit-read-only t))
         (kill-whole-line)))))
+
+(defun org-timeline--decorate-info (info)
+  "Make info string clickable"
+  (let ((info-keymap (make-sparse-keymap)))
+    (define-key info-keymap [mouse-1] 'org-agenda-goto)
+    (define-key info-keymap [mouse-2] 'org-find-file-at-mouse)
+    (propertize info 'keymap info-keymap
+                     'help-echo "mouse-1 jump to org file"
+                     'org-timeline-info-line t)))
 
 (defun org-timeline--hover-info (win txt)
   "Displays info about a hovered block"
-  (unless (eq txt org-timeline-current-info)
+  (unless (eq txt org-timeline-current-info) ;; prevents flickering
     (setq org-timeline-current-info txt)
     (save-window-excursion
       (save-excursion
         (select-window win)
-        (org-timeline--clear-info)
+        (org-timeline--kill-info)
         (goto-line org-timeline-first-line)
         (forward-line (- org-timeline-height 2))
-        (let ((inhibit-read-only t)
-              (info-keymap (make-sparse-keymap)))
-          (define-key info-keymap [mouse-1] 'org-agenda-goto)
-          (define-key info-keymap [mouse-2] 'org-find-file-at-mouse)
-          (put-text-property 0 (string-width txt) 'keymap info-keymap txt)
-          (put-text-property 0 (string-width txt) 'help-echo "mouse-1 jump to org file." txt)
-          (insert txt)
-          (insert "\n"))))))
+        (let ((inhibit-read-only t))
+          (insert (org-timeline--decorate-info txt) "\n"))))))
 
 (defun org-timeline--move-to-task ()
   "Move to a blocks correponding task."
@@ -325,7 +329,6 @@ Return new copy of STRING."
                     (insert (propertize (concat "    " slotline)
                                         'org-timeline-line-day day
                                         'org-timeline-overlap-line t))
-                    (print (buffer-substring-no-properties 1 (point-max)))
                     (when (eq (save-excursion (forward-line)) 0) ;; there is a clock line
                       (insert "\n"))))
                 (when (and (string= type "clock")
@@ -368,11 +371,12 @@ Return new copy of STRING."
                     (add-text-properties start-pos end-pos props)))))
           ;; display the next block's info
           (goto-char (point-max))
-          (setq org-timeline-current-info (if (eq next-task nil) "  no incoming event" (org-timeline-task-info next-task)))
           (unless (eq (length tasks) 0) ;; no info if empty timeline
-            (insert "\n" org-timeline-current-info))
+            (insert "\n" (if (eq next-task nil)
+                             (propertize "  no incoming event" 'org-timeline-info t)
+                           (org-timeline--decorate-info (org-timeline-task-info next-task)))))
           (buffer-string))))))
- 
+
 (defun org-timeline-insert-timeline ()
   "Insert graphical timeline into agenda buffer."
   (unless (buffer-narrowed-p)
