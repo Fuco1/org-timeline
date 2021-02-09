@@ -83,7 +83,7 @@
   :group 'org-timeline)
 
 (defvar org-timeline-first-line 0
-  "Computer first line of the timeline in the buffer.")
+  "Computed first line of the timeline in the buffer.")
 
 (defvar org-timeline-height 0
   "Computed height (number of lines) of the timeline.")
@@ -166,7 +166,7 @@ Return new copy of STRING."
   "Clear the info line"
   (save-excursion
     (goto-line org-timeline-first-line)
-    (forward-line (- org-timeline-height 1))
+    (forward-line (- org-timeline-height 2))
     (let ((inhibit-read-only t))
       (while (not (get-text-property (point) 'org-timeline-end))
         (kill-whole-line)))))
@@ -180,7 +180,7 @@ Return new copy of STRING."
         (select-window win)
         (org-timeline--clear-info)
         (goto-line org-timeline-first-line)
-        (forward-line (- org-timeline-height 1))
+        (forward-line (- org-timeline-height 2))
         (let ((inhibit-read-only t)
               (info-keymap (make-sparse-keymap)))
           (define-key info-keymap [mouse-1] 'org-agenda-goto)
@@ -335,6 +335,32 @@ Return new copy of STRING."
                                (not org-timeline-show-clocked))
                     (add-text-properties start-pos end-pos props)))
                 (setq current-line 1)))
+          ;; display the nearest (to current time) block's info
+          ;; empty info line if no event today, unless timeline is completely empty
+          (goto-char (point-max))
+          (let ((today (calendar-absolute-from-gregorian (calendar-current-date)))
+                (nearest-task nil))
+            (dolist (task tasks)
+              (let ((beg (org-timeline-task-beg task))
+                    (end (org-timeline-task-end task)))
+                (when (and (eq today (org-timeline-task-day task))
+                           (or (and (<= beg current-time)
+                                    (>= end current-time)) ;; task is happening now
+                               (or (eq nearest-task nil)
+                                   (or (and (< end current-time)
+                                            (> end (org-timeline-task-end nearest-task))) ;;
+                                       (and (> beg current-time)
+                                            (or (< beg (org-timeline-task-beg nearest-task))
+                                                (< (org-timeline-task-end nearest-task) current-time)))))))
+                  ;; task is nearer current time than current nearest-task
+                  (setq nearest-task task)
+                  (print (org-timeline-task-beg nearest-task))
+                  (print (org-timeline-task-end nearest-task))
+                  (print "---"))))
+            (print current-time)
+            (setq org-timeline-current-info (if (eq nearest-task nil) "" (org-timeline-task-info nearest-task)))
+            (unless (eq (length tasks) 0)
+                (insert "\n" org-timeline-current-info)))
           (buffer-string))))))
 
 (defun org-timeline-insert-timeline ()
