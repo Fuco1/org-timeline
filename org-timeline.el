@@ -275,17 +275,15 @@ Return new copy of STRING."
         ;; find the next task
         (dolist (task tasks)
           (let* ((beg (org-timeline-task-beg task))
-                 (end (org-timeline-task-end task)))
-            (when (and (eq today (org-timeline-task-day task))
-                       (not (string= (org-timeline-task-type task) "clock"))
-                       (or (and (<= beg current-time)
-                                (>= end current-time)) ;; task is happening now
-                            (or (eq next-task nil)
-                                (or (and (< end current-time)
-                                        (> end (org-timeline-task-end next-task))) ;;
-                                    (and (> beg current-time)
-                                        (or (< beg (org-timeline-task-beg next-task))
-                                            (< (org-timeline-task-end next-task) current-time)))))))
+                 (end (org-timeline-task-end task))
+                 (is-today (eq today (org-timeline-task-day task)))
+                 (is-now (and (<= beg current-time)
+                              (>= end current-time)))
+                 (is-next (> beg current-time))
+                 (is-closer-to-now (and is-next
+                                        (or (eq next-task nil)
+                                            (< beg (org-timeline-task-beg next-task))))))
+            (when (and is-today (or is-now is-closer-to-now))
               ;; task is nearer current time than current nearest-task
               (setq next-task task))))
         (with-temp-buffer
