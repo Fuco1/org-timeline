@@ -207,7 +207,7 @@ Return new copy of STRING."
   (interactive
    (let ((line (get-text-property (point) 'org-timeline-task-line)))
      (when org-timeline-prepend
-       (setq line (+ line org-timeline-height)))
+       (setq line (+ line org-timeline-height -1)))
      (goto-line line)
      (search-forward (get-text-property (point) 'time)))))
 
