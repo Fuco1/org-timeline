@@ -251,6 +251,8 @@ Return new copy of STRING."
                        :type type) tasks)))))))
     (nreverse tasks)))
 
+;; Some ideas for the the generation of the timeline were inspired by the
+;; forked repo: https://github.com/deopurkar/org-timeline.
 (defun org-timeline--generate-timeline ()
   "Generate the timeline string that will represent current agenda view."
   (let* ((start-offset (* org-timeline-start-hour 60))
@@ -306,7 +308,7 @@ Return new copy of STRING."
                 (unless (eq (get-text-property (point) 'org-timeline-line-day) day)
                   (insert (concat "\n" ;; creating the necessary lines, up to the current task's day
                                   (mapconcat (lambda (line-day)
-                                               (propertize (concat (calendar-day-name (mod line-day 7) t t) ;; by git user deopurkar
+                                               (propertize (concat (calendar-day-name (mod line-day 7) t t) ;; found in https://github.com/deopurkar/org-timeline
                                                                    " "
                                                                    slotline)
                                                            'org-timeline-line-day line-day))
@@ -351,7 +353,7 @@ Return new copy of STRING."
                 (let* ((start-pos (get-start-pos (line-number-at-pos) beg)) 
                        (end-pos (get-end-pos (line-number-at-pos) end))
                        (props (list 'font-lock-face (if (or (get-text-property start-pos 'org-timeline-occupied)
-                                                            (get-text-property end-pos 'org-timeline-occupied)) ;; code from git user deopurkar
+                                                            (get-text-property end-pos 'org-timeline-occupied))
                                                         'org-timeline-overlap
                                                       (if (and (not (eq next-task nil))
                                                                (eq (org-timeline-task-info next-task) info)
