@@ -317,7 +317,7 @@ Return new copy of STRING."
                         (insert (propertize (concat "  $ " slotline)
                                             'org-timeline-line-day day
                                              'org-timeline-clock-line t))))))
-                (let* ((start-pos (get-start-pos (line-number-at-pos) beg)) ;; + 4 because the week's day is shown
+                (let* ((start-pos (get-start-pos (line-number-at-pos) beg)) 
                        (end-pos (get-end-pos (line-number-at-pos) end))
                        (props (list 'font-lock-face (if (or (get-text-property start-pos 'org-timeline-occupied)
                                                             (get-text-property end-pos 'org-timeline-occupied))
