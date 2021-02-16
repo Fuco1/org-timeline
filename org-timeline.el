@@ -394,19 +394,20 @@ Return new copy of STRING."
                                   'org-timeline-task-line line)))
                 (when org-timeline-show-title-in-blocks
                   (save-excursion
-                    (goto-char start-pos)
-                    (insert (substring text 0 block-length))
-                    (delete-char block-length)))
+                    (let ((block-text (if (> (length text) block-length) (substring text 0 block-length) text)))
+                      (goto-char start-pos)
+                      (insert block-text)
+                      (delete-char (length block-text)))))
                 (unless (and (string= type "clock")
                              (not org-timeline-show-clocked))
                   (add-text-properties start-pos end-pos props)))))
-        ;; display the next block's info
-        (goto-char (point-max))
-        (unless (eq (length tasks) 0) ;; no info if empty timeline
-          (insert "\n" (if (eq next-task nil)
-                           (propertize "  no incoming event" 'org-timeline-info-line t)
-                         (org-timeline--decorate-info (org-timeline-task-info next-task)))))
-        (buffer-string))))))
+          ;; display the next block's info
+          (goto-char (point-max))
+          (unless (eq (length tasks) 0) ;; no info if empty timeline
+            (insert "\n" (if (eq next-task nil)
+                             (propertize "  no incoming event" 'org-timeline-info-line t)
+                           (org-timeline--decorate-info (org-timeline-task-info next-task)))))
+          (buffer-string))))))
 
 (defun org-timeline-insert-timeline ()
   "Insert graphical timeline into agenda buffer."
