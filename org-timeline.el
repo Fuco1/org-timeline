@@ -87,6 +87,14 @@
   :type 'boolean
   :group 'org-timeline)
 
+(defcustom org-timeline-show-title-in-blocks nil
+  "When non-nil, show the title of the event in the block.
+
+If the item has a property `TIMELINE_TEXT', use this as a title.
+Otherwise, the title will be the headline, stripped of its todo state."
+  :type 'boolean
+  :group 'org-timeline)
+
 (defvar org-timeline-first-line 0
   "Computed first line of the timeline in the buffer.")
 
@@ -105,6 +113,7 @@
   face ;; the task block's face
   day  ;; day (gregorian list i.e `(month day year)`) when the task appears
   type ;; type of the task ("scheduled", "clocked" ...)
+  text ;; the text to display inside the block
   )
 
 
@@ -164,6 +173,17 @@ Only used when org-timeline-emphasize-next-block is non-nil."
         (search-forward "Clocked:" (line-end-position) t))
       'org-timeline-clocked)
      (t 'org-timeline-block))))
+
+(defun org-timeline--get-block-text ()
+  "Get the text to be shown inside the current block."
+  (let ((item-marker (org-get-at-bol 'org-marker)))
+    (--if-let (org-entry-get item-marker "TIMELINE_TEXT" t)
+        it
+       (with-current-buffer (marker-buffer item-marker)
+        (save-excursion
+          (goto-char item-marker)
+          (outline-previous-heading)
+          (org-element-property :raw-value (org-element-context)))))))
 
 (defun org-timeline--add-elapsed-face (string current-offset)
   "Add `org-timeline-elapsed' to STRING's elapsed portion.
@@ -239,6 +259,7 @@ Return new copy of STRING."
                             (round (+ beg duration))
                           current-time))
                    (face (org-timeline--get-face))
+                   (text (org-timeline--get-block-text))
                    (day (org-get-at-bol 'day)))
               (when (>= beg start-offset)
                 (push (make-org-timeline-task
@@ -248,7 +269,8 @@ Return new copy of STRING."
                        :info info
                        :line line
                        :day day
-                       :type type) tasks)))))))
+                       :type type
+                       :text text) tasks)))))))
     (nreverse tasks)))
 
 ;; Some ideas for the the generation of the timeline were inspired by the
@@ -295,89 +317,96 @@ Return new copy of STRING."
         (with-temp-buffer
           (insert hourline)
           (dolist (task tasks)
-              (let ((beg (org-timeline-task-beg task))
-                    (end (org-timeline-task-end task))
-                    (info (org-timeline-task-info task))
-                    (line (org-timeline-task-line task))
-                    (day (org-timeline-task-day task))
-                    (face (org-timeline-task-face task))
-                    (type (org-timeline-task-type task)))
-                (goto-char 1)
-                (while (and (not (eq (get-text-property (point) 'org-timeline-line-day) day))
-                            (not (eq (forward-line) 1)))) ;; while task's day line not reached in timeline
-                (unless (eq (get-text-property (point) 'org-timeline-line-day) day)
-                  (insert (concat "\n" ;; creating the necessary lines, up to the current task's day
-                                  (mapconcat (lambda (line-day)
-                                               (propertize (concat (calendar-day-name (mod line-day 7) t t) ;; found in https://github.com/deopurkar/org-timeline
-                                                                   " "
-                                                                   slotline)
-                                                           'org-timeline-line-day line-day))
-                                             (if-let ((last-day (get-text-property (point) 'org-timeline-line-day)))
-                                                 (number-sequence (+ 1 last-day))
-                                               (list day))
-                                             "\n"))))
-                ;; cursor is now at beginning of the task's day's line
-                (when (and (get-text-property (get-start-pos (line-number-at-pos) beg) 'org-timeline-occupied) ;; overlap
-                           org-timeline-overlap-in-new-line
-                           (or (not (string= type "clock"))
-                               (and (string= type "clock") (not org-timeline-clocked-in-new-line)))) ;; clocks shouldn't overlap, unless they don't have their own line
-                  (forward-line)
-                  (while (and (get-text-property (get-start-pos (line-number-at-pos) beg) 'org-timeline-occupied)
-                              (get-text-property (point) 'org-timeline-overlap-line))
-                    (forward-line))
-                  (when (eq (point) (point-max))
-                    (insert "\n"))
-                  (when (not (get-text-property (point) 'org-timeline-overlap-line))
-                    (insert (propertize (concat "    " slotline)
-                                        'org-timeline-line-day day
-                                        'org-timeline-overlap-line t))
-                    (when (eq (save-excursion (forward-line)) 0) ;; there is a clock line
-                      (insert "\n"))))
-                (when (and (string= type "clock")
-                           org-timeline-show-clocked
-                           org-timeline-clocked-in-new-line)
-                  (if (get-text-property (point) 'org-timeline-clocks-open-for-day)
-                      (while (not (get-text-property (point) 'org-timeline-clock-line))
-                        (forward-line))
-                    (progn
-                      (put-text-property (point) (line-end-position) 'org-timeline-clocks-open-for-day t)
-                      (forward-line)
-                      (while (get-text-property (point) 'org-timeline-overlap-line) ;; go after overlap lines
-                        (forward-line))
-                      (when (eq (point) (point-max))
-                        (insert "\n"))
-                      (unless (get-text-property (point) 'org-timeline-clock-line)
-                        (insert (propertize (concat "  $ " slotline)
-                                            'org-timeline-line-day day
-                                             'org-timeline-clock-line t))))))
-                (let* ((start-pos (get-start-pos (line-number-at-pos) beg)) 
-                       (end-pos (get-end-pos (line-number-at-pos) end))
-                       (props (list 'font-lock-face (if (or (get-text-property start-pos 'org-timeline-occupied)
-                                                            (get-text-property end-pos 'org-timeline-occupied))
-                                                        'org-timeline-overlap
-                                                      (if (and (not (eq next-task nil))
-                                                               (eq (org-timeline-task-info next-task) info)
-                                                               org-timeline-emphasize-next-block)
-                                                          'org-timeline-next-block
-                                                        face))
-                                     'org-timeline-occupied t
-                                     'mouse-face 'highlight
-                                     'keymap move-to-task-map
-                                     'task-info info
-                                     'help-echo (lambda (w obj pos)
-                                                  (org-timeline--hover-info w info)
-                                                  info) ;; the lambda will be called on block hover
-                                     'org-timeline-task-line line)))
-                  (unless (and (string= type "clock")
-                               (not org-timeline-show-clocked))
-                    (add-text-properties start-pos end-pos props)))))
-          ;; display the next block's info
-          (goto-char (point-max))
-          (unless (eq (length tasks) 0) ;; no info if empty timeline
-            (insert "\n" (if (eq next-task nil)
-                             (propertize "  no incoming event" 'org-timeline-info-line t)
-                           (org-timeline--decorate-info (org-timeline-task-info next-task)))))
-          (buffer-string))))))
+            (let ((beg (org-timeline-task-beg task))
+                  (end (org-timeline-task-end task))
+                  (info (org-timeline-task-info task))
+                  (line (org-timeline-task-line task))
+                  (day (org-timeline-task-day task))
+                  (face (org-timeline-task-face task))
+                  (text (org-timeline-task-text task))
+                  (type (org-timeline-task-type task)))
+              (goto-char 1)
+              (while (and (not (eq (get-text-property (point) 'org-timeline-line-day) day))
+                          (not (eq (forward-line) 1)))) ;; while task's day line not reached in timeline
+              (unless (eq (get-text-property (point) 'org-timeline-line-day) day)
+                (insert (concat "\n" ;; creating the necessary lines, up to the current task's day
+                                (mapconcat (lambda (line-day)
+                                             (propertize (concat (calendar-day-name (mod line-day 7) t t) ;; found in https://github.com/deopurkar/org-timeline
+                                                                 " "
+                                                                 slotline)
+                                                         'org-timeline-line-day line-day))
+                                           (if-let ((last-day (get-text-property (point) 'org-timeline-line-day)))
+                                               (number-sequence (+ 1 last-day))
+                                             (list day))
+                                           "\n"))))
+              ;; cursor is now at beginning of the task's day's line
+              (when (and (get-text-property (get-start-pos (line-number-at-pos) beg) 'org-timeline-occupied) ;; overlap
+                         org-timeline-overlap-in-new-line
+                         (or (not (string= type "clock"))
+                             (and (string= type "clock") (not org-timeline-clocked-in-new-line)))) ;; clocks shouldn't overlap, unless they don't have their own line
+                (forward-line)
+                (while (and (get-text-property (get-start-pos (line-number-at-pos) beg) 'org-timeline-occupied)
+                            (get-text-property (point) 'org-timeline-overlap-line))
+                  (forward-line))
+                (when (eq (point) (point-max))
+                  (insert "\n"))
+                (when (not (get-text-property (point) 'org-timeline-overlap-line))
+                  (insert (propertize (concat "    " slotline)
+                                      'org-timeline-line-day day
+                                      'org-timeline-overlap-line t))
+                  (when (eq (save-excursion (forward-line)) 0) ;; there is a clock line
+                    (insert "\n"))))
+              (when (and (string= type "clock")
+                         org-timeline-show-clocked
+                         org-timeline-clocked-in-new-line)
+                (if (get-text-property (point) 'org-timeline-clocks-open-for-day)
+                    (while (not (get-text-property (point) 'org-timeline-clock-line))
+                      (forward-line))
+                  (progn
+                    (put-text-property (point) (line-end-position) 'org-timeline-clocks-open-for-day t)
+                    (forward-line)
+                    (while (get-text-property (point) 'org-timeline-overlap-line) ;; go after overlap lines
+                      (forward-line))
+                    (when (eq (point) (point-max))
+                      (insert "\n"))
+                    (unless (get-text-property (point) 'org-timeline-clock-line)
+                      (insert (propertize (concat "  $ " slotline)
+                                          'org-timeline-line-day day
+                                          'org-timeline-clock-line t))))))
+              (let* ((start-pos (get-start-pos (line-number-at-pos) beg))
+                     (end-pos (get-end-pos (line-number-at-pos) end))
+                     (block-length (- end-pos start-pos))
+                     (props (list 'font-lock-face (if (or (get-text-property start-pos 'org-timeline-occupied)
+                                                          (get-text-property end-pos 'org-timeline-occupied))
+                                                      'org-timeline-overlap
+                                                    (if (and (not (eq next-task nil))
+                                                             (eq (org-timeline-task-info next-task) info)
+                                                             org-timeline-emphasize-next-block)
+                                                        'org-timeline-next-block
+                                                      face))
+                                  'org-timeline-occupied t
+                                  'mouse-face 'highlight
+                                  'keymap move-to-task-map
+                                  'task-info info
+                                  'help-echo (lambda (w obj pos)
+                                               (org-timeline--hover-info w info)
+                                               info) ;; the lambda will be called on block hover
+                                  'org-timeline-task-line line)))
+                (when org-timeline-show-title-in-blocks
+                  (save-excursion
+                    (goto-char start-pos)
+                    (insert (substring text 0 block-length))
+                    (delete-char block-length)))
+                (unless (and (string= type "clock")
+                             (not org-timeline-show-clocked))
+                  (add-text-properties start-pos end-pos props)))))
+        ;; display the next block's info
+        (goto-char (point-max))
+        (unless (eq (length tasks) 0) ;; no info if empty timeline
+          (insert "\n" (if (eq next-task nil)
+                           (propertize "  no incoming event" 'org-timeline-info-line t)
+                         (org-timeline--decorate-info (org-timeline-task-info next-task)))))
+        (buffer-string))))))
 
 (defun org-timeline-insert-timeline ()
   "Insert graphical timeline into agenda buffer."
