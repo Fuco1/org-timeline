@@ -445,7 +445,7 @@ Return new copy of STRING."
                            (> block-length 0)
                            (> end-pos start-pos))
                   (setq block-length (- block-length 1))
-                  (setq end-pos (- end-pos 1)))
+                  (setq start-pos (+ start-pos 1)))
                 (when org-timeline-show-title-in-blocks
                   (save-excursion
                     (let ((block-text (if (> (length text) block-length) (substring text 0 block-length) text)))
