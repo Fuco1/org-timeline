@@ -87,6 +87,13 @@
   :type 'boolean
   :group 'org-timeline)
 
+(defcustom org-timeline-space-out-consecutive nil
+  "When non-nil, shorten by one char any block directly followed by another one.
+
+The duration of blocks will be much less accurately represented when this is enabled."
+  :type 'boolean
+  :group 'org-timeline)
+
 (defcustom org-timeline-show-title-in-blocks nil
   "When non-nil, show the title of the event in the block.
 
@@ -425,14 +432,20 @@ Return new copy of STRING."
                                                           (get-text-property end-pos 'org-timeline-occupied))
                                                       'org-timeline-overlap
                                                     face)
-                                  'org-timeline-occupied t
-                                  'mouse-face 'highlight
-                                  'keymap move-to-task-map
-                                  'task-info info
-                                  'help-echo (lambda (w obj pos)
-                                               (org-timeline--hover-info w info)
-                                               info) ;; the lambda will be called on block hover
-                                  'org-timeline-task-line line)))
+                                   'org-timeline-occupied t
+                                   'mouse-face 'highlight
+                                   'keymap move-to-task-map
+                                   'task-info info
+                                   'help-echo (lambda (w obj pos)
+                                                (org-timeline--hover-info w info)
+                                                info) ;; the lambda will be called on block hover
+                                   'org-timeline-task-line line)))
+                (when (and org-timeline-space-out-consecutive
+                           (get-text-property (- start-pos 1) 'org-timeline-occupied)
+                           (> block-length 0)
+                           (> end-pos start-pos))
+                  (setq block-length (- block-length 1))
+                  (setq end-pos (- end-pos 1)))
                 (when org-timeline-show-title-in-blocks
                   (save-excursion
                     (let ((block-text (if (> (length text) block-length) (substring text 0 block-length) text)))
@@ -442,7 +455,15 @@ Return new copy of STRING."
                 (unless (and (string= type "clock")
                              (not org-timeline-show-clocked))
                   (add-text-properties start-pos end-pos props)
-                  (unless (or (not (listp (get-text-property (- start-pos 1) 'font-lock-face)))
+                  (when (and nil ;; disabled until we can make it work
+                             (get-text-property (- start-pos 1) 'org-timeline-occupied)
+                             (not (get-text-property (- start-pos 1) 'org-timeline-box)))
+                    (progn
+                      (put-text-property start-pos end-pos 'org-timeline-box t)
+                      (put-text-property start-pos end-pos 'mouse-face `(:highlight t :box (:line-width -0 :color ,(face-attribute 'default :background) :style nil)))
+                      (put-text-property start-pos end-pos 'font-lock-face (cons `(:box (:line-width -0 :color ,(face-attribute 'default :background) :style nil)) (get-text-property start-pos 'font-lock-face)))))
+                  (unless (or org-timeline-space-out-consecutive
+                              (not (listp (get-text-property (- start-pos 1) 'font-lock-face)))
                               (-contains? (get-text-property (- start-pos 1) 'font-lock-face) '(:overline t)))
                     (put-text-property start-pos end-pos 'mouse-face '(:highlight t :overline t))
                     (put-text-property start-pos end-pos 'font-lock-face (cons '(:overline t) (get-text-property start-pos 'font-lock-face))))))))
