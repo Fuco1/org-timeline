@@ -171,8 +171,8 @@ Only used when org-timeline-emphasize-next-block is non-nil."
     (cond
      ((save-excursion
         (search-forward "Clocked:" (line-end-position) t))
-      'org-timeline-clocked)
-     (t 'org-timeline-block))))
+      (list 'org-timeline-clocked))
+     (t (list 'org-timeline-block)))))
 
 (defun org-timeline--get-block-text ()
   "Get the text to be shown inside the current block."
@@ -191,11 +191,11 @@ Only used when org-timeline-emphasize-next-block is non-nil."
 Return new copy of STRING."
   (let ((string-copy (copy-sequence string)))
     (when (< 0 current-offset)
-      (put-text-property 0 current-offset 'font-lock-face 'org-timeline-elapsed string-copy))
+      (put-text-property 0 current-offset 'font-lock-face (list 'org-timeline-elapsed) string-copy))
     string-copy))
 
 (defun org-timeline--kill-info ()
-  "Kill the info line"
+  "Kill the info line."
   (save-excursion
     (goto-line org-timeline-first-line)
     (while (and (not (get-text-property (point) 'org-timeline-info-line))
@@ -205,7 +205,7 @@ Return new copy of STRING."
         (kill-whole-line)))))
 
 (defun org-timeline--decorate-info (info)
-  "Make info string clickable"
+  "Make info string clickable."
   (let ((info-keymap (make-sparse-keymap)))
     (define-key info-keymap [mouse-1] 'org-agenda-goto)
     (define-key info-keymap [mouse-2] 'org-find-file-at-mouse)
@@ -214,7 +214,7 @@ Return new copy of STRING."
                      'org-timeline-info-line t)))
 
 (defun org-timeline--hover-info (win txt)
-  "Displays info about a hovered block"
+  "Displays info about a hovered block."
   (unless (eq txt org-timeline-current-info) ;; prevents flickering
     (setq org-timeline-current-info txt)
     (save-window-excursion
@@ -272,6 +272,9 @@ Return new copy of STRING."
                        :type type
                        :text text) tasks)))))))
     (nreverse tasks)))
+
+(defun org-timeline--put-event ()
+  "Prints block")
 
 ;; Some ideas for the the generation of the timeline were inspired by the
 ;; forked repo: https://github.com/deopurkar/org-timeline.
@@ -400,7 +403,10 @@ Return new copy of STRING."
                       (delete-char (length block-text)))))
                 (unless (and (string= type "clock")
                              (not org-timeline-show-clocked))
-                  (add-text-properties start-pos end-pos props)))))
+                  (add-text-properties start-pos end-pos props)
+                  (unless (or (not (listp (get-text-property (- start-pos 1) 'font-lock-face)))
+                              (-contains? (get-text-property (- start-pos 1) 'font-lock-face) '(:overline t)))
+                    (put-text-property start-pos end-pos 'font-lock-face (cons '(:overline t) (get-text-property start-pos 'font-lock-face))))))))
           ;; display the next block's info
           (goto-char (point-max))
           (unless (eq (length tasks) 0) ;; no info if empty timeline
