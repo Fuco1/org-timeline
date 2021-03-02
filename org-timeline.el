@@ -326,7 +326,7 @@ Return new copy of STRING."
           (when (eq (org-timeline-task-id task) (org-timeline-task-id next-task))
             (setf (org-timeline-task-is-next task) t)
             (when org-timeline-emphasize-next-block
-              (setf (org-timeline-task-face task) 'org-timeline-next-block))))))
+              (setf (org-timeline-task-face task) (list 'org-timeline-next-block)))))))
     (nreverse tasks)))
 
 (defun org-timeline--put-block (task)
@@ -444,6 +444,7 @@ Return new copy of STRING."
                   (add-text-properties start-pos end-pos props)
                   (unless (or (not (listp (get-text-property (- start-pos 1) 'font-lock-face)))
                               (-contains? (get-text-property (- start-pos 1) 'font-lock-face) '(:overline t)))
+                    (put-text-property start-pos end-pos 'mouse-face '(:highlight t :overline t))
                     (put-text-property start-pos end-pos 'font-lock-face (cons '(:overline t) (get-text-property start-pos 'font-lock-face))))))))
           ;; display the next block's info
           (goto-char (point-max))
