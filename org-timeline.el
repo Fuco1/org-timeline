@@ -441,11 +441,13 @@ Return new copy of STRING."
                                                 info) ;; the lambda will be called on block hover
                                    'org-timeline-task-line line)))
                 (when (and org-timeline-space-out-consecutive
-                           (get-text-property (- start-pos 1) 'org-timeline-occupied)
-                           (> block-length 0)
-                           (> end-pos start-pos))
-                  (setq block-length (- block-length 1))
-                  (setq start-pos (+ start-pos 1)))
+                           (get-text-property (- start-pos 1) 'org-timeline-occupied))
+                  (save-excursion
+                    (goto-char (- start-pos 1))
+                    (if (<= (- beg 1) current-time)
+                        (insert (propertize " " 'face 'org-timeline-elapsed))
+                      (insert " "))
+                    (delete-char 1)))
                 (when org-timeline-show-title-in-blocks
                   (save-excursion
                     (let ((block-text (if (> (length text) block-length) (substring text 0 block-length) text)))
@@ -462,6 +464,7 @@ Return new copy of STRING."
                       (put-text-property start-pos end-pos 'org-timeline-box t)
                       (put-text-property start-pos end-pos 'mouse-face `(:highlight t :box (:line-width -0 :color ,(face-attribute 'default :background) :style nil)))
                       (put-text-property start-pos end-pos 'font-lock-face (cons `(:box (:line-width -0 :color ,(face-attribute 'default :background) :style nil)) (get-text-property start-pos 'font-lock-face)))))
+                  ;; add an overline for consecutive events
                   (unless (or org-timeline-space-out-consecutive
                               (not (listp (get-text-property (- start-pos 1) 'font-lock-face)))
                               (-contains? (get-text-property (- start-pos 1) 'font-lock-face) '(:overline t)))
