@@ -222,7 +222,7 @@ This will be shown at the beginning of the block's line."
 Return new copy of STRING."
   (let ((string-copy (copy-sequence string)))
     (when (< 0 current-offset)
-      (put-text-property 0 current-offset 'font-lock-face (list 'org-timeline-elapsed) string-copy))
+      (put-text-property 0 (+ 1 current-offset) 'font-lock-face (list 'org-timeline-elapsed) string-copy))
     string-copy))
 
 (defun org-timeline--kill-info ()
@@ -336,9 +336,6 @@ Return new copy of STRING."
               (setf (org-timeline-task-face task) (list 'org-timeline-next-block)))))))
     (nreverse tasks)))
 
-(defun org-timeline--put-block (task)
-  "Prints block in the right line.")
-
 ;; Some ideas for the the generation of the timeline were inspired by the
 ;; forked repo: https://github.com/deopurkar/org-timeline.
 (defun org-timeline--generate-timeline ()
@@ -439,7 +436,8 @@ Return new copy of STRING."
                                    'help-echo (lambda (w obj pos)
                                                 (org-timeline--hover-info w info)
                                                 info) ;; the lambda will be called on block hover
-                                   'org-timeline-task-line line)))
+                                    'org-timeline-task-line line)))
+                (setq text (concat "\u275A" text)) ;; inserts a heavy vertical bar at beginning of block
                 (when (and org-timeline-space-out-consecutive
                            (get-text-property (- start-pos 1) 'org-timeline-occupied))
                   (save-excursion
@@ -464,11 +462,12 @@ Return new copy of STRING."
                       (put-text-property start-pos end-pos 'org-timeline-box t)
                       (put-text-property start-pos end-pos 'mouse-face `(:highlight t :box (:line-width -0 :color ,(face-attribute 'default :background) :style nil)))
                       (put-text-property start-pos end-pos 'font-lock-face (cons `(:box (:line-width -0 :color ,(face-attribute 'default :background) :style nil)) (get-text-property start-pos 'font-lock-face)))))
-                  ;; add an overline for consecutive events
+                  (put-text-property start-pos end-pos 'mouse-face '(:highlight t :box t))
+                  ;; use overline to make consecutive blocks distinct
                   (unless (or org-timeline-space-out-consecutive
-                              (not (listp (get-text-property (- start-pos 1) 'font-lock-face)))
-                              (-contains? (get-text-property (- start-pos 1) 'font-lock-face) '(:overline t)))
-                    (put-text-property start-pos end-pos 'mouse-face '(:highlight t :overline t))
+                              (get-text-property (- start-pos 1) 'org-timeline-overline))
+                    (put-text-property start-pos end-pos 'org-timeline-overline t)
+                    (put-text-property start-pos end-pos 'mouse-face '(:highlight t :overline t :box t))
                     (put-text-property start-pos end-pos 'font-lock-face (cons '(:overline t) (get-text-property start-pos 'font-lock-face))))))))
           ;; display the next block's info
           (goto-char (point-max))
