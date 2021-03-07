@@ -487,12 +487,12 @@ Return new copy of STRING."
           (let* ((elapsed-hours (- (floor (/ current-time 60)) org-timeline-start-hour))
                  (hour-columns-to-remove (max 0 (- elapsed-hours org-timeline-hide-elapsed))))
             (goto-char 5)
-            (loop repeat hour-columns-to-remove collect (delete-char 6))
+            (dotimes (i hour-columns-to-remove) (delete-char 6))
             (while (not (eq (forward-line) 1))
               (print "hello")
               (goto-char (+ (point) 4))
               (when (not (eq (get-text-property (point) 'org-timeline-line-day) nil)) ;; when still in timeline
-                (loop repeat hour-columns-to-remove collect (delete-char 6)))))
+                (dotimes (i hour-columns-to-remove) (delete-char 6)))))
           (buffer-string))))))
 
 (defun org-timeline-insert-timeline ()
