@@ -102,6 +102,14 @@ Otherwise, the title will be the headline, stripped of its todo state."
   :type 'boolean
   :group 'org-timeline)
 
+
+(defcustom org-timeline-hide-elapsed -1
+  "Hide fully elapsed hours, and keep only this number of them.
+
+For negative values, do not hide elapsed hours."
+  :type 'integer
+  :group 'org-timeline)
+
 (defvar org-timeline-first-line 0
   "Computed first line of the timeline in the buffer.")
 
@@ -476,6 +484,15 @@ Return new copy of STRING."
                     (if (eq next-task nil)
                         (propertize "  no incoming event" 'org-timeline-info-line t)
                       (org-timeline--decorate-info (org-timeline-task-info next-task)))))
+          (let* ((elapsed-hours (- (floor (/ current-time 60)) org-timeline-start-hour))
+                 (hour-columns-to-remove (max 0 (- elapsed-hours org-timeline-hide-elapsed))))
+            (goto-char 5)
+            (loop repeat hour-columns-to-remove collect (delete-char 6))
+            (while (not (eq (forward-line) 1))
+              (print "hello")
+              (goto-char (+ (point) 4))
+              (when (not (eq (get-text-property (point) 'org-timeline-line-day) nil)) ;; when still in timeline
+                (loop repeat hour-columns-to-remove collect (delete-char 6)))))
           (buffer-string))))))
 
 (defun org-timeline-insert-timeline ()
