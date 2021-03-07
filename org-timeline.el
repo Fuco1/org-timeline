@@ -102,9 +102,8 @@ Otherwise, the title will be the headline, stripped of its todo state."
   :type 'boolean
   :group 'org-timeline)
 
-
-(defcustom org-timeline-hide-elapsed -1
-  "Hide fully elapsed hours, and keep only this number of them.
+(defcustom org-timeline-keep-elapsed -1
+  "In day view, for today, hide fully elapsed hours, and keep only this number of them.
 
 For negative values, do not hide elapsed hours."
   :type 'integer
@@ -349,6 +348,7 @@ Return new copy of STRING."
 (defun org-timeline--generate-timeline ()
   "Generate the timeline string that will represent current agenda view."
   (let* ((start-offset (* org-timeline-start-hour 60))
+         (today (calendar-absolute-from-gregorian (calendar-current-date)))
          (current-time (+ (* 60 (string-to-number (format-time-string "%H")))
                           (string-to-number (format-time-string "%M"))))
          (current-offset (/ (- current-time start-offset) 10))
@@ -368,6 +368,7 @@ Return new copy of STRING."
                 (get-end-pos (current-line end) (+ 1 5 (* (- current-line 1) (+ 5 (length slotline))) (/ (- end start-offset) 10))))
       (let ((current-line 1)
             (move-to-task-map (make-sparse-keymap))
+            (today-onlyp (eq 0 (length (delq nil (mapcar (lambda (task) (if (eq (org-timeline-task-day task) today) nil task)) tasks)))))
             (next-task (car (delq nil (mapcar (lambda (task) (if (org-timeline-task-is-next task) task nil)) tasks)))))
         (define-key move-to-task-map [mouse-1] 'org-timeline--move-to-task)
         (with-temp-buffer
@@ -437,14 +438,14 @@ Return new copy of STRING."
                                                           (get-text-property end-pos 'org-timeline-occupied))
                                                       'org-timeline-overlap
                                                     face)
-                                   'org-timeline-occupied t
-                                   'mouse-face 'highlight
-                                   'keymap move-to-task-map
-                                   'task-info info
-                                   'help-echo (lambda (w obj pos)
-                                                (org-timeline--hover-info w info)
-                                                info) ;; the lambda will be called on block hover
-                                    'org-timeline-task-line line)))
+                                  'org-timeline-occupied t
+                                  'mouse-face 'highlight
+                                  'keymap move-to-task-map
+                                  'task-info info
+                                  'help-echo (lambda (w obj pos)
+                                               (org-timeline--hover-info w info)
+                                               info) ;; the lambda will be called on block hover
+                                  'org-timeline-task-line line)))
                 (setq text (concat "\u275A" text)) ;; inserts a heavy vertical bar at beginning of block
                 (when (and org-timeline-space-out-consecutive
                            (get-text-property (- start-pos 1) 'org-timeline-occupied))
@@ -463,13 +464,6 @@ Return new copy of STRING."
                 (unless (and (string= type "clock")
                              (not org-timeline-show-clocked))
                   (add-text-properties start-pos end-pos props)
-                  (when (and nil ;; disabled until we can make it work
-                             (get-text-property (- start-pos 1) 'org-timeline-occupied)
-                             (not (get-text-property (- start-pos 1) 'org-timeline-box)))
-                    (progn
-                      (put-text-property start-pos end-pos 'org-timeline-box t)
-                      (put-text-property start-pos end-pos 'mouse-face `(:highlight t :box (:line-width -0 :color ,(face-attribute 'default :background) :style nil)))
-                      (put-text-property start-pos end-pos 'font-lock-face (cons `(:box (:line-width -0 :color ,(face-attribute 'default :background) :style nil)) (get-text-property start-pos 'font-lock-face)))))
                   (put-text-property start-pos end-pos 'mouse-face '(:highlight t :box t))
                   ;; use overline to make consecutive blocks distinct
                   (unless (or org-timeline-space-out-consecutive
@@ -484,15 +478,17 @@ Return new copy of STRING."
                     (if (eq next-task nil)
                         (propertize "  no incoming event" 'org-timeline-info-line t)
                       (org-timeline--decorate-info (org-timeline-task-info next-task)))))
-          (let* ((elapsed-hours (- (floor (/ current-time 60)) org-timeline-start-hour))
-                 (hour-columns-to-remove (max 0 (- elapsed-hours org-timeline-hide-elapsed))))
-            (goto-char 5)
-            (dotimes (i hour-columns-to-remove) (delete-char 6))
-            (while (not (eq (forward-line) 1))
-              (print "hello")
-              (goto-char (+ (point) 4))
-              (when (not (eq (get-text-property (point) 'org-timeline-line-day) nil)) ;; when still in timeline
-                (dotimes (i hour-columns-to-remove) (delete-char 6)))))
+          (when (and (> org-timeline-keep-elapsed 0)
+                     today-onlyp
+                     (> (length tasks) 0))
+            (let* ((elapsed-hours (- (floor (/ current-time 60)) org-timeline-start-hour))
+                   (hour-columns-to-remove (max 0 (- elapsed-hours org-timeline-keep-elapsed))))
+              (goto-char 5)
+              (dotimes (i hour-columns-to-remove) (delete-char 6))
+              (while (not (eq (forward-line) 1))
+                (goto-char (+ (point) 4))
+                (when (not (eq (get-text-property (point) 'org-timeline-line-day) nil)) ;; when still in timeline
+                  (dotimes (i hour-columns-to-remove) (delete-char 6))))))
           (buffer-string))))))
 
 (defun org-timeline-insert-timeline ()
