@@ -523,7 +523,7 @@ This does not take the block's context (e.g. overlap) into account."
                 (delete-region (+ 5 lbeg) (+ 5 lbeg (* 6 hour-columns-to-remove)))
                 (cl-incf day1-lines-count))
               (when (eq (get-text-property (point) 'org-timeline-line-day) (+ today 1))
-                (let ((thisline (buffer-substring  (+ 6 lbeg) (+ 6 lbeg (* 6 hour-columns-to-remove)))))
+                (let ((thisline (buffer-substring  (+ 5 lbeg) (+ 5 lbeg (* 6 hour-columns-to-remove)))))
                   (kill-whole-line)
                   (goto-line (+ 2 day2-lines-count))
                   (when (> day2-lines-count day1-lines-count)
