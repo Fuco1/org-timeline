@@ -216,12 +216,14 @@ Only used when org-timeline-emphasize-next-block is non-nil."
 (defun org-timeline--get-cat (type)
   "Get the block's category according to TYPE.
 
-This will be shown at the beginning of the block's line."
+The 3 first chars will be shown at the beginning of the block's line."
   (--if-let (org-entry-get (org-get-at-bol 'org-marker) "TIMELINE_CAT" t)
-      it
+      (if (< (length it) 3)
+          (concat (substring "   " 0 (- 3 (length it))) it)
+        (substring it 0 3))
     (if (and (string= type "clock") org-timeline-clocked-in-new-line)
-        "$  "
-      nil)))
+        "  $"
+      "   ")))
 
 (defun org-timeline--get-no-overlap (type)
   "Whether this block can overlap in timeline according to TYPE."
@@ -384,16 +386,14 @@ Return t if this task will overlap another one when inserted."
                                    (list day))
                                  "\n"))))
     ;; cursor is now at beginning of the task's day's first line
-    (while (and (not (eq (get-text-property (point) 'org-timeline-cat) cat))
+    (while (and (not (string= (get-text-property (point) 'org-timeline-cat) cat))
                 (eq (get-text-property (point) 'org-timeline-line-day) day))
       (forward-line))
-    (unless (eq (get-text-property (point) 'org-timeline-cat) cat)
+    (unless (string= (get-text-property (point) 'org-timeline-cat) cat)
       (when (not (eq (line-end-position) (point-max))) (forward-line -1))
       (goto-char (line-end-position))
       (insert "\n"
-              (concat (substring (concat cat "    ") 0 3) " ") ;; insert category line
-              (propertize slotline 'org-timeline-line-day day 'org-timeline-cat cat)))
-    (print (line-number-at-pos))
+              (propertize (concat cat " " slotline) 'org-timeline-line-day day 'org-timeline-cat cat)))
     ;; cursor is now at beginning of the task's category's first line
     (cl-flet ((overlapp (only-true-if-new-line-wanted)
                        (save-excursion
@@ -410,9 +410,9 @@ Return t if this task will overlap another one when inserted."
                              (forward-char))
                            flag))))
       (while (overlapp t)
-        (let ((decorated-slotline (propertize slotline 'org-timeline-line-day day 'org-timeline-cat cat 'org-timeline-overlap-line t)))
+        (let ((decorated-slotline (propertize (concat cat " " slotline) 'org-timeline-line-day day 'org-timeline-cat cat 'org-timeline-overlap-line t)))
           (if (eq (forward-line) 1) ;; reached end or buffer
-              (insert (concat "\n" (substring (concat cat "   ") 0 3) " " decorated-slotline))
+              (insert (concat "\n" decorated-slotline))
             (when (not (eq (get-text-property (point) 'org-timeline-cat) cat)) ;; reached end of category's section
               (insert (concat decorated-slotline "\n"))))))
       ;; cursor is now placed on the right line, at the right position.
