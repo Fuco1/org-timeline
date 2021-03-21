@@ -380,7 +380,7 @@ Return t if this task will overlap another one when inserted."
                                    (propertize (concat (calendar-day-name (mod line-day 7) t t) ;; found in https://github.com/deopurkar/org-timeline
                                                        " "
                                                        slotline)
-                                               'org-timeline-line-day line-day))
+                                               'org-timeline-line-day line-day 'org-timeline-cat "   "))
                                  (if-let ((last-day (get-text-property (point) 'org-timeline-line-day)))
                                      (number-sequence (+ 1 last-day))
                                    (list day))
