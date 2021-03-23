@@ -108,8 +108,8 @@ You will see a rolling 24h cycle, starting `org-timeline-keep-elapsed' hours ago
   :type 'integer
   :group 'org-timeline)
 
-(defcustom org-timeline-insert-before-title "\u275A"
-  "String inserted before the block's title. It makes consecutive blocks distinct."
+(defcustom org-timeline-insert-before-text "\u275A"
+  "String inserted before the block's text. It makes consecutive blocks distinct."
   :type 'string
   :group 'org-timeline)
 
@@ -300,12 +300,12 @@ WIN is the agenda buffer's window."
 
 (defun org-timeline--move-to-task-in-agenda-buffer ()
   "Move to a blocks correponding task in the agenda buffer."
-  (interactive
-   (let ((line (get-text-property (point) 'org-timeline-task-line-in-agenda-buffer)))
+  (interactive)
+   (let ((line (get-text-property (point) 'org-timeline-task-line)))
      (when org-timeline-prepend
        (setq line (+ line org-timeline-height -1)))
      (goto-line line)
-     (search-forward (get-text-property (point) 'time))))) ; makes point more visible to user.
+     (search-forward (get-text-property (point) 'time)))) ; makes point more visible to user.
 
 (defun org-timeline--list-tasks ()
   "Build the list of tasks to display."
@@ -443,7 +443,7 @@ This does not take the block's context (e.g. overlap) into account."
                                    (org-timeline--draw-new-info w info)
                                    info)
                       'org-timeline-task-line line))
-         (title (concat org-timeline-insert-before-title
+         (title (concat org-timeline-insert-before-text
                         (org-timeline-task-text task)
                         blank-block))
          (block (if org-timeline-show-text-in-blocks
