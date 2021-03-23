@@ -389,7 +389,7 @@ Return t if this task will overlap another one when inserted."
     (while (and (not (string= (get-text-property (point) 'org-timeline-cat) cat))
                 (eq (get-text-property (point) 'org-timeline-line-day) day))
       (forward-line))
-    (unless (string= (get-text-property (point) 'org-timeline-cat) cat)
+    (unless (string= (-if-let (cathere (get-text-property (point) 'org-timeline-cat)) cathere "   ") cat)
       (when (not (eq (line-end-position) (point-max))) (forward-line -1))
       (goto-char (line-end-position))
       (insert "\n"
