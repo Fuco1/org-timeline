@@ -236,7 +236,8 @@ The 3 first chars will be shown at the beginning of the block's line."
   (save-excursion
     (let (overlap-points)
       (goto-char (+ (line-beginning-position) (org-timeline-task-offset-beg task)))
-      (while (<= (point) (+ (line-beginning-position) (org-timeline-task-offset-end task)))
+      (while (and (<= (point) (+ (line-beginning-position) (org-timeline-task-offset-end task)))
+                 (< (point) (point-max)))
         (when (get-text-property (point) 'org-timeline-occupied)
           (push (point) overlap-points))
         (forward-char))
