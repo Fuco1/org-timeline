@@ -344,8 +344,12 @@ WIN is the agenda buffer's window."
                  (end (if duration
                           (round (+ beg duration))
                         current-time)))
+            (setq beg (max beg start-offset))
+            (setq end (min end (+ start-offset (* 24 60))))
+            (setq duration (- end beg))
             (when (eq end (* 24 60)) (cl-incf end -1)) ; FIXME fixes a bug that shouldn't happen (crash when events end at midnight).
-            (when (and (>= beg start-offset)
+            (when (and (>= end start-offset)
+                       (<= beg (+ start-offset (* 24 60)))
                        (or org-timeline-show-clocked
                            (not (string= type "clock"))))
               (push (make-org-timeline-task
