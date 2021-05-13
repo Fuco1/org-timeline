@@ -45,20 +45,21 @@
     (it "should add clocked item to the timeline in log mode"
       (org-timeline-test-helper-with-agenda
           "* TODO
-  :CLOCK:
-  CLOCK: [2017-04-19 Tue 20:59]--[2017-04-18 Tue 21:12] =>  0:13
+  :LOGBOOK:
+  CLOCK: [2017-04-19 Wed 20:59]--[2017-04-19 Wed 21:12] =>  0:13
   :END:"
         "2017-04-19"
         (org-agenda-log-mode)
-        (org-timeline-insert-timeline)
-        (let* ((start (text-property-any (point-min) (point-max) 'org-timeline-occupied t))
-               (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
-          (goto-char start)
-          (expect (car (member 'org-timeline-block (get-text-property (point) 'font-lock-face))) :to-be 'org-timeline-block)
-          (save-excursion
-            (previous-line)
-            (expect (looking-at-p "|21:00|") :to-be-truthy))
-          (expect (- end start) :to-be 2)))))
+        (let ((org-timeline-dedicated-clocked-line nil))
+          (org-timeline-insert-timeline)
+          (let* ((start (text-property-any (point-min) (point-max) 'org-timeline-occupied t))
+                 (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
+            (goto-char start)
+            (expect (car (member 'org-timeline-clocked (get-text-property (point) 'font-lock-face))) :to-be 'org-timeline-clocked)
+            (save-excursion
+              (previous-line)
+              (expect (looking-at-p "|21:00|") :to-be-truthy))
+            (expect (- end start) :to-be 2))))))
 
 
   (describe "when working with overlapping events"
