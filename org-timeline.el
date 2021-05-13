@@ -407,8 +407,8 @@ Return t if this task will overlap another one when inserted."
                                                        " "
                                                        slotline)
                                                'org-timeline-day line-day 'org-timeline-group-name "   "))
-                                 (if-let ((last-day (get-text-property (point) 'org-timeline-day)))
-                                     (number-sequence (+ 1 last-day))
+                                 (if-let ((last-day (get-text-property (line-beginning-position) 'org-timeline-day)))
+                                     (number-sequence (+ 1 last-day) day)
                                    (list day))
                                  "\n"))))
     ;; cursor is now at beginning of the task's day's first line
@@ -484,8 +484,8 @@ Changes the block's face according to context."
                      (eq (org-timeline-task-id task) (org-timeline-task-id org-timeline-next-task))
                    nil))
         (block (org-timeline--make-basic-block task)))
-    (when overlapp (setq block (propertize block 'font-lock-face 'org-timeline-overlap)))
-    (when is-next (setq block (propertize block 'font-lock-face 'org-timeline-next-block)))
+    (when overlapp (setq block (propertize block 'font-lock-face (list 'org-timeline-overlap))))
+    (when is-next (setq block (propertize block 'font-lock-face (list 'org-timeline-next-block))))
     (unless (get-text-property (- (point) 1) 'org-timeline-overline)
       (add-text-properties 0 (length block)
                            (list 'org-timeline-overline t
