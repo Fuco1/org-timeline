@@ -472,7 +472,9 @@ This does not take the block's context (e.g. overlap) into account."
 Changes the block's face according to context."
   (org-timeline--goto-block-position task)
   (let ((overlapp (not (eq (org-timeline--overlapping-at-point task) nil)))
-        (is-next (eq (org-timeline-task-id task) (org-timeline-task-id org-timeline-next-task)))
+        (is-next (if (not (eq org-timeline-next-task nil))
+                     (eq (org-timeline-task-id task) (org-timeline-task-id org-timeline-next-task))
+                   nil))
         (block (org-timeline--make-basic-block task)))
     (when overlapp (setq block (propertize block 'font-lock-face 'org-timeline-overlap)))
     (when is-next (setq block (propertize block 'font-lock-face 'org-timeline-next-block)))
