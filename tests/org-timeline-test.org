@@ -16,11 +16,12 @@
                (org-timeline-beginning-of-day-hour 5)
                (org-timeline-keep-elapsed -1)
                (org-timeline-insert-before-text "")) ; not default, but better for tests
-      (let ((org-timeline-overlap-in-new-line nil)) ;use this to override defaults
+      ;; use this next let to override defaults
+      (let ((org-agenda-span 4))
         (org-agenda nil "a"))))
   (runtest))
 #+end_src
 * TODO
-  :LOGBOOK:
-  CLOCK: [2017-04-19 Wed 20:59]--[2017-04-19 Wed 21:12] =>  0:13
-  :END:
+  SCHEDULED: <2017-04-19 Wed 10:00-11:00>
+* TODO
+  SCHEDULED: <2017-04-22 Sat 10:30-11:30>"
