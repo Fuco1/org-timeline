@@ -597,7 +597,6 @@ See the documentation of `org-timeline-keep-elapsed' for more information."
         (forward-line)))
     (forward-line)
     (let ((inhibit-read-only t))
-      (cursor-sensor-mode 1)
       (setq org-timeline-first-line-in-agenda-buffer (line-number-at-pos))
       (insert (propertize (concat (make-string (window-width) ?─)) 'face 'org-time-grid) "\n")
       (insert (org-timeline--generate-timeline))
