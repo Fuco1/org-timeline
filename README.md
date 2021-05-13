@@ -37,8 +37,9 @@ By default, clocked entries will be shown in a dedicated line, in `org-timeline-
 
 You can also emphasize the next block to happen with `org-timeline-emphasize-next-block`. If non-nil, the next-block in today's line will be drawn in `org-timeline-next-block` face.
 
-## Categories
-You can add the string property `TIMELINE_CATEGORY` to your tasks. Every task with the same category will be shown in a separate, dedicated line for that day.
+## Groups
+You can add the string property `TIMELINE_GROUP` to your tasks. Every task with the same group name will be shown in a separate, dedicated line for that day.
+The first three characters of the name will be shown at the beginning of that line.
 
 ## Rolling 24h cycle
 You can set up org-timeline and org-agenda so that the timeline will show a rolling 24h cycle, starting a certain number of hours before now.
