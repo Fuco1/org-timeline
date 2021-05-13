@@ -35,6 +35,7 @@
         (let* ((start (text-property-any (point-min) (point-max) 'org-timeline-occupied t))
                (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
           (goto-char start)
+          (prin1 (point))
           (expect (car (member 'org-timeline-block (get-text-property (point) 'font-lock-face))) :to-be 'org-timeline-block)
           (save-excursion
             (previous-line)
@@ -67,9 +68,9 @@
         (it "should add overlapping items to separate lines"
             (org-timeline-test-helper-with-agenda
              "* TODO
-                SCHEDULED: <2017-04-19 Wed 10:00-11:00>
-                * TODO
-                SCHEDULED: <2017-04-19 Wed 10:30-11:30>"
+  SCHEDULED: <2017-04-19 Wed 10:00-11:00>
+* TODO
+  SCHEDULED: <2017-04-19 Wed 10:30-11:30>"
              "2017-04-19"
              (let ((org-timeline-overlap-in-new-line t))
                (org-timeline-insert-timeline)
