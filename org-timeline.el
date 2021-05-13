@@ -334,7 +334,7 @@ WIN is the agenda buffer's window."
                    (marker (org-get-at-bol 'org-marker))
                    (type (org-get-at-bol 'type))
                    (duration (org-get-at-bol 'duration)))
-        (when (member type (list "scheduled" "clock" "timestamp"))
+        (when (member type (list "past-scheduled" "scheduled" "clock" "timestamp"))
           (when (and (numberp duration)
                      (< duration 0))
             (cl-incf duration 1440))
