@@ -421,13 +421,21 @@ Return t if this task will overlap another one when inserted."
       (insert "\n"
               (propertize (concat group-name " " slotline) 'org-timeline-day day 'org-timeline-group-name group-name)))
     ;; cursor is now at beginning of the task's group's first line
-    (while (org-timeline--new-overlap-line-required-at-point-p task)
+    (let ((new-overlap-line-required-flag (org-timeline--new-overlap-line-required-at-point-p task)))
+      (while (and (org-timeline--new-overlap-line-required-at-point-p task)
+                  (eq (get-text-property (point) 'org-timeline-day) day)
+                  (eq (get-text-property (point) 'org-timeline-group-name) group-name)
+                  (not (eq (line-end-position) (point-max))))
+        (setq new-overlap-line-required-flag t)
+        (forward-line))
       (let ((decorated-slotline (propertize (concat group-name " " slotline)
                                             'org-timeline-day day
                                             'org-timeline-group-name group-name)))
-        (if (eq (forward-line) 1)
-            (insert (concat "\n" decorated-slotline))
-          (when (not (eq (get-text-property (point) 'org-timeline-group-name) group-name)) ; reached end of group's section
+        (when new-overlap-line-required-flag
+          (if (eq (line-end-position) (point-max))
+              (progn
+                (end-of-line)
+                (insert (concat "\n" decorated-slotline)))
             (insert (concat decorated-slotline "\n"))))))
     ;; cursor is now placed on the right line, at the right position.
     (goto-char (+ (line-beginning-position) offset-beg))))
