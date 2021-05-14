@@ -385,7 +385,8 @@ WIN is the agenda buffer's window."
         (when (and is-today (or is-now is-closer-to-now))
           (setq org-timeline-next-task task))))
     ;; change the next task's face
-    (when org-timeline-emphasize-next-block
+    (when (and org-timeline-emphasize-next-block
+               org-timeline-next-task)
       (dolist (task tasks)
         (when (eq (org-timeline-task-id task) (org-timeline-task-id org-timeline-next-task))
           (setf (org-timeline-task-face task) (list 'org-timeline-next-block)))))
