@@ -493,8 +493,8 @@ Changes the block's face according to context."
     (unless (get-text-property (- (point) 1) 'org-timeline-overline)
       (add-text-properties 0 (length block)
                            (list 'org-timeline-overline t
-                                 'font-lock-face (cons '(:overline t) (get-text-property 0 'font-lock-face block))
-                                 'mouse-face (cons '(:overline t) (get-text-property 0 'mouse-face block)))
+                                 'font-lock-face (append '(:overline t) (get-text-property 0 'font-lock-face block))
+                                 'mouse-face (append '(:overline t) (get-text-property 0 'mouse-face block)))
                            block))
     (setq block (substring block 0 (min (length block) (- (line-end-position) (point)))))
     (delete-char (length block))
