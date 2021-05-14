@@ -437,11 +437,8 @@ Return t if this task will overlap another one when inserted."
                                             'org-timeline-day day
                                             'org-timeline-group-name group-name)))
         (when new-overlap-line-required-flag
-          (if (eq (line-end-position) (point-max))
-              (progn
-                (end-of-line)
-                (insert (concat "\n" decorated-slotline)))
-            (insert (concat decorated-slotline "\n"))))))
+          (end-of-line)
+          (insert "\n" decorated-slotline))))
     ;; cursor is now placed on the right line, at the right position.
     (goto-char (+ (line-beginning-position) offset-beg))))
 
@@ -550,7 +547,7 @@ See the documentation of `org-timeline-keep-elapsed' for more information."
     (let (groups-handled)
       (dotimes (i (length today-line-pieces))
         (let* ((group-handled (get-text-property 0 'org-timeline-group-name (seq-elt today-line-pieces i)))
-               (group-handled-p (lambda (piece) (text-property-any 0 (length piece) 'org-timeline-group-name group-handled piece)))
+               (group-handled-p (lambda (piece) (string= (get-text-property 1 'org-timeline-group-name piece) group-handled)))
                (prev-pieces-today (seq-take today-line-pieces i))
                (next-pieces-today (seq-drop today-line-pieces i))
                (same-group-pieces-today (seq-filter group-handled-p next-pieces-today))
@@ -621,7 +618,10 @@ See the documentation of `org-timeline-keep-elapsed' for more information."
          (today-or-tomorrow-only-p (eq 0 (length (delq nil (mapcar (lambda (task) (if (member (org-timeline-task-day task) `(,today ,(+ today 1))) nil task)) tasks))))))
     (with-temp-buffer
       (insert hourline)
-      (dolist (task tasks) (org-timeline--make-and-insert-block task))
+      (dolist (task tasks)
+        ;; (print (buffer-substring (point-min) (point-max)))
+        (org-timeline--make-and-insert-block task))
+      ;; (print (buffer-substring (point-min) (point-max)))
       (when (and (>= org-timeline-keep-elapsed 0)
                  today-or-tomorrow-only-p
                  (> (length tasks) 0))

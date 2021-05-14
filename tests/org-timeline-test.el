@@ -12,12 +12,13 @@
 ;; - [X] two non-consecutive days
 ;; - [X] changing beginning-of-day-hour
 ;; - [X] custom faces (only tests for named color "firebrick")
-;; - [ ] overline on consecutive events
+;; - [X] overline on consecutive events
 ;; - [X] text directly from headline
 ;; - [X] custom text
 ;; - [X] group for one evnet
 ;; - [X] group and overlapping events (with overlap-in-new-line)
 ;; - [X] group and overlapping events (without overlap-in-new-line)
+;; - [X] group event and normal overlapping events
 ;; - [X] group and events on consecutive days
 ;; - [X] group and events on non-consecutive days
 ;; - [X] group and overlapping events on non-consecutive days
@@ -202,6 +203,30 @@
 
   (describe "when working with several events"
 
+    (it "should not add overlapping items to separate lines"
+      (org-timeline-test-helper-with-agenda
+       "* TODO
+  SCHEDULED: <2017-04-19 Wed 10:00-11:00>
+* TODO
+  SCHEDULED: <2017-04-19 Wed 10:30-11:30>
+* TODO
+  SCHEDULED: <2017-04-19 Wed 14:00-15:00>"
+       "2017-04-19"
+       (let ((org-timeline-overlap-in-new-line nil))
+         (org-timeline-insert-timeline)
+         (let* ((start (text-property-any (point-min) (point-max) 'org-timeline-occupied t))
+                (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
+           (goto-char start)
+           (expect (plist-get (get-text-property (point) 'font-lock-face) :overline) :to-be-truthy)
+           (goto-char (1- end))
+           (expect (plist-get (get-text-property (point) 'font-lock-face) :overline) :to-be nil)
+           (goto-char end))
+         (let* ((start (text-property-any (point) (point-max) 'org-timeline-occupied t))
+                (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
+           (goto-char start)
+           (expect (plist-get (get-text-property (point) 'font-lock-face) :overline) :to-be-truthy)
+           (goto-char end)))))
+
     (describe "without `org-timeline-overlap-in-new-line'"
 
       (it "should not add overlapping items to separate lines"
@@ -243,6 +268,9 @@
              (save-excursion
                (previous-line)
                (expect (looking-at-p "10:00|") :to-be-truthy))
+             (save-excursion
+               (beginning-of-line)
+               (expect (looking-at-p "Wed |") :to-be-truthy))
              (expect (- end start) :to-be 6)
              (goto-char end))
            (let* ((start (text-property-any (point) (point-max) 'org-timeline-occupied t))
@@ -253,6 +281,9 @@
                (previous-line)
                (previous-line)
                (expect (looking-at-p "00|11:00|") :to-be-truthy))
+             (save-excursion
+               (beginning-of-line)
+               (expect (looking-at-p "    |") :to-be-truthy))
              (expect (- end start) :to-be 6))))))
 
 
@@ -394,6 +425,58 @@
               (save-excursion
                 (beginning-of-line)
                 (expect (looking-at-p "    |") :to-be-truthy))
+              (expect (- end start) :to-be 9))
+            (expect org-timeline-height :to-be 7))))
+
+      (it "should work well with overlaps"
+        (org-timeline-test-helper-with-agenda
+            "* TODO
+  SCHEDULED: <2017-04-19 Wed 10:00-11:00>
+* TODO
+  SCHEDULED: <2017-04-19 Wed 10:30-11:30>
+* TODO
+  SCHEDULED: <2017-04-19 Wed 10:30-12:00>
+  :PROPERTIES:
+  :TIMELINE_GROUP: classes
+  :END:"
+          "2017-04-19"
+          (let ((org-timeline-overlap-in-new-line t))
+            (org-timeline-insert-timeline)
+            ;; (display-warning 'buttercup (format "%s" (buffer-substring (point-min) (point-max))))
+            (let* ((start (text-property-any (point-min) (point-max) 'org-timeline-occupied t))
+                   (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
+              (goto-char start)
+              (save-excursion
+                (beginning-of-line)
+                (expect (looking-at-p "Wed |") :to-be-truthy))
+              (save-excursion
+                (previous-line)
+                (expect (looking-at-p "10:00|") :to-be-truthy))
+              (expect (- end start) :to-be 6)
+              (goto-char end))
+            (let* ((start (text-property-any (point) (point-max) 'org-timeline-occupied t))
+                   (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
+              (goto-char start)
+              (save-excursion
+                (beginning-of-line)
+                (expect (looking-at-p "    |") :to-be-truthy))
+              (save-excursion
+                (previous-line)
+                (previous-line)
+                (expect (looking-at-p "00|11:") :to-be-truthy))
+              (expect (- end start) :to-be 6)
+              (goto-char end))
+            (let* ((start (text-property-any (point) (point-max) 'org-timeline-occupied t))
+                   (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
+              (goto-char start)
+              (save-excursion
+                (beginning-of-line)
+                (expect (looking-at-p "cla |") :to-be-truthy))
+              (save-excursion
+                (previous-line)
+                (previous-line)
+                (previous-line)
+                (expect (looking-at-p "00|11:") :to-be-truthy))
               (expect (- end start) :to-be 9))
             (expect org-timeline-height :to-be 7))))
 
@@ -1105,7 +1188,7 @@
                   (org-timeline-overlap-in-new-line t)
                   (org-timeline-keep-elapsed 0))
               (org-timeline-insert-timeline)
-               (display-warning 'buttercup (format "%s" (buffer-substring (point-min) (point-max))))
+              ;; (display-warning 'buttercup (format "%s" (buffer-substring (point-min) (point-max))))
               (let* ((start (text-property-any (point-min) (point-max) 'org-timeline-occupied t))
                      (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
                 (goto-char start)
@@ -1180,6 +1263,7 @@
             (let ((org-timeline-beginning-of-day-hour 0)
                   (org-timeline-overlap-in-new-line t)
                   (org-timeline-keep-elapsed 0))
+              (org-agenda-log-mode)
               (org-timeline-insert-timeline)
               ;; (display-warning 'buttercup (format "%s" (buffer-substring (point-min) (point-max))))
               (let* ((start (text-property-any (point-min) (point-max) 'org-timeline-occupied t))
@@ -1209,7 +1293,7 @@
                   (previous-line)
                   (previous-line)
                   (forward-char -1)
-                  (expect (looking-at-p (concat beg ":10|")) :to-be-truthy))
+                  (expect (looking-at-p (concat beg ":00|")) :to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
                   (expect (looking-at-p (concat "  $ |")) :to-be-truthy))
@@ -1221,7 +1305,7 @@
                   (previous-line)
                   (previous-line)
                   (forward-char -1)
-                  (expect (looking-at-p "00:10|") :to-be-truthy))
+                  (expect (looking-at-p "00:00|") :to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
                   (expect (looking-at-p "  $ |") :to-be-truthy)))))))
@@ -1264,7 +1348,6 @@
             (concat year "-" month "-" day)
             (let ((org-timeline-beginning-of-day-hour 0)
                   (org-timeline-overlap-in-new-line t)
-                  (org-timeline-show-text-in-blocks t)
                   (org-timeline-keep-elapsed 0))
               (org-timeline-insert-timeline)
               ;; (display-warning 'buttercup (format "%s" (buffer-substring (point-min) (point-max))))
@@ -1277,7 +1360,7 @@
                   (expect (looking-at-p (concat beg ":00|")) :to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
-                  (expect (looking-at-p (concat "lr  |")) :to-be-truthy))
+                  (expect (looking-at-p (concat " lr |")) :to-be-truthy))
                 (goto-char end))
               (let* ((start (text-property-any (point) (point-max) 'org-timeline-occupied t))
                      (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
@@ -1288,7 +1371,7 @@
                   (expect (looking-at-p "00:00|") :to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
-                  (expect (looking-at-p (concat "lr  |")) :to-be-truthy))
+                  (expect (looking-at-p (concat " lr |")) :to-be-truthy))
                 (goto-char end))
               (let* ((start (text-property-any (point) (point-max) 'org-timeline-occupied t))
                      (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
@@ -1325,20 +1408,20 @@
                (beg (format "%02d" hour))
                (end (format "%02d" (1+ hour))))
           (org-timeline-test-helper-with-agenda-two
-              (concat "* TODO
+              (concat "* TODO d1
   SCHEDULED: <" year "-" month "-" day " " beg ":00-" end ":00>
-* TODO
+* TODO d1-o
   SCHEDULED: <" year "-" month "-" day " " beg ":10-" end ":10>
-* TODO
+* TODO d1-g
   SCHEDULED: <" year "-" month "-" day " " beg ":10-" end ":10>
   :PROPERTIES:
   :TIMELINE_GROUP: left
   :END:
-* TODO
+* TODO d2
   SCHEDULED: <" year-t "-" month-t "-" day-t " 00:00-00:30>
-* TODO
+* TODO d2-o
   SCHEDULED: <" year-t "-" month-t "-" day-t " 00:10-00:40>
-* TODO
+* TODO d2-g
   SCHEDULED: <" year-t "-" month-t "-" day-t " 00:00-00:30>
   :PROPERTIES:
   :TIMELINE_GROUP: right
@@ -1346,6 +1429,7 @@
             (concat year "-" month "-" day)
             (let ((org-timeline-beginning-of-day-hour 0)
                   (org-timeline-overlap-in-new-line t)
+                  (org-timeline-show-text-in-blocks t)
                   (org-timeline-keep-elapsed 0))
               (org-timeline-insert-timeline)
               ;; (display-warning 'buttercup (format "%s" (buffer-substring (point-min) (point-max))))
@@ -1375,7 +1459,8 @@
                 (save-excursion
                   (previous-line)
                   (previous-line)
-                  (expect (looking-at-p (concat beg ":10")):to-be-truthy))
+                  (forward-char -1)
+                  (expect (looking-at-p (concat beg ":00")):to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
                   (expect (looking-at-p "    |") :to-be-truthy))
@@ -1386,7 +1471,8 @@
                 (save-excursion
                   (previous-line)
                   (previous-line)
-                  (expect (looking-at-p "00:10|") :to-be-truthy))
+                  (forward-char -1)
+                  (expect (looking-at-p "00:00|") :to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
                   (expect (looking-at-p "    |") :to-be-truthy))
@@ -1396,7 +1482,8 @@
                 (goto-char start)
                 (save-excursion
                   (dotimes (n 3) (previous-line))
-                  (expect (looking-at-p (concat beg ":10")):to-be-truthy))
+                  (forward-char -1)
+                  (expect (looking-at-p (concat beg ":00")):to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
                   (expect (looking-at-p "lef |") :to-be-truthy))
@@ -1406,7 +1493,7 @@
                 (goto-char start)
                 (save-excursion
                   (dotimes (n 4) (previous-line))
-                  (expect (looking-at-p "00:10|"):to-be-truthy))
+                  (expect (looking-at-p "00:00|"):to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
                   (expect (looking-at-p "rig |") :to-be-truthy))
