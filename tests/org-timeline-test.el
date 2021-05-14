@@ -35,7 +35,7 @@
 ;; - [X] 24 hours cycle uneven overlaps with more on the left
 ;; - [X] 24 hours cycle uneven overlaps with more on the right
 ;; - [X] 24 hours cycle with groups
-;; - [ ] 24 hours cycle with clocks
+;; - [X] 24 hours cycle with clocks
 ;; - [X] 24 hours cycle merge groups
 ;; - [X] 24 hours cycle with overlapping events and groups
 
@@ -928,7 +928,7 @@
                 (goto-char start)
                 (save-excursion
                   (goto-char end)
-                  (expect (get-text-property (point) 'font-lock-face) :not :to-contain 'org-timeline-elapsed))
+                  (expect (get-text-property (point) 'face) :to-be nil))
                 (save-excursion
                   (previous-line)
                   (expect (looking-at-p "00:00|") :to-be-truthy))
@@ -936,7 +936,7 @@
                   (beginning-of-line)
                   (expect (looking-at-p (concat weekday " |")) :to-be-truthy))
                 (goto-char end))
-              (expect (start (text-property-any (point) (point-max) 'org-timeline-occupied t)) :to-be nil)))))
+              (expect (text-property-any (point) (point-max) 'org-timeline-occupied t) :to-be nil)))))
 
       (it "should balance an uneven number of overlaps (more on left)"
         (let* ((today (calendar-current-date))
@@ -994,7 +994,13 @@
                   (expect (looking-at-p (concat beg ":00|")) :to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
-                  (expect (looking-at-p "    |") :to-be-truthy)))))))
+                  (expect (looking-at-p "    |") :to-be-truthy))
+                (save-excursion
+                  (end-of-line)
+                  (previous-line)
+                  (previous-line)
+                  (forward-char -6)
+                  (expect (looking-at-p (format "%02d:00|" (1- hour))) :to-be-truthy)))))))
 
       (it "should balance an uneven number of overlaps (more on right)"
         (let* ((today (calendar-current-date))
@@ -1011,15 +1017,20 @@
                (beg (format "%02d" hour))
                (end (format "%02d" (1+ hour))))
           (org-timeline-test-helper-with-agenda-two
-              (concat "* TODO
+              (concat "* TODO item1
   SCHEDULED: <" year "-" month "-" day " " beg ":00-" end ":00>
-* TODO
+* TODO item2
   SCHEDULED: <" year-t "-" month-t "-" day-t " 00:00-00:30>
-* TODO
+* TODO item3
   SCHEDULED: <" year-t "-" month-t "-" day-t " 00:00-00:40>")
             (concat year "-" month "-" day)
+            ;; The test breaks when the line marked with '*' below is removed,
+            ;; but this is a buttercup specific bug.
+            ;; The test passes perfectly well when ran manually, even
+            ;; when running in `emacs -nw'.
             (let ((org-timeline-beginning-of-day-hour 0)
                   (org-timeline-overlap-in-new-line t)
+                  (org-timeline-show-text-in-blocks t) ; *
                   (org-timeline-keep-elapsed 0))
               (org-timeline-insert-timeline)
               ;; (display-warning 'buttercup (format "%s" (buffer-substring (point-min) (point-max))))
@@ -1052,7 +1063,13 @@
                   (expect (looking-at-p "00:00|") :to-be-truthy))
                 (save-excursion
                   (beginning-of-line)
-                  (expect (looking-at-p "    |") :to-be-truthy)))))))
+                  (expect (looking-at-p "    |") :to-be-truthy))
+                (save-excursion
+                  (end-of-line)
+                  (previous-line)
+                  (previous-line)
+                  (forward-char -6)
+                  (expect (looking-at-p (format "%02d:00|" (1- hour))) :to-be-truthy)))))))
 
       (it "should work well with groups"
         (let* ((today (calendar-current-date))
@@ -1088,7 +1105,7 @@
                   (org-timeline-overlap-in-new-line t)
                   (org-timeline-keep-elapsed 0))
               (org-timeline-insert-timeline)
-              ;; (display-warning 'buttercup (format "%s" (buffer-substring (point-min) (point-max))))
+               (display-warning 'buttercup (format "%s" (buffer-substring (point-min) (point-max))))
               (let* ((start (text-property-any (point-min) (point-max) 'org-timeline-occupied t))
                      (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
                 (goto-char start)

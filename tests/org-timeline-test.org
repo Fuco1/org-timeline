@@ -24,14 +24,28 @@
             (org-timeline-overlap-in-new-line t)
             (org-timeline-keep-elapsed 0)
             (org-agenda-start-day "2021-05-14")
-           )
+            )
         (org-agenda nil "a"))))
   (runtest))
-#+end_src
+  #+end_src
 
 * TODO
-  SCHEDULED: <2021-05-14 05:00-06:00>
+SCHEDULED: <2021-05-14 20:00-21:00>
+:PROPERTIES:
+:TIMELINE_GROUP: lr
+:END:
 * TODO
-  SCHEDULED: <2021-05-14 05:00-06:10>
+SCHEDULED: <2021-05-14 20:00-21:00>
+:PROPERTIES:
+:TIMELINE_GROUP: left
+:END:
 * TODO
-  SCHEDULED: <2021-05-15 00:00-06:30>
+SCHEDULED: <2021-05-15 00:00-00:30>
+:PROPERTIES:
+:TIMELINE_GROUP: lr
+:END:
+* TODO
+SCHEDULED: <2021-05-15 00:00-00:30>
+:PROPERTIES:
+:TIMELINE_GROUP: right
+:END:
