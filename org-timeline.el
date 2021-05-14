@@ -579,7 +579,7 @@ See the documentation of `org-timeline-keep-elapsed' for more information."
     (with-temp-buffer
       (insert hourline)
       (dolist (task tasks) (org-timeline--make-and-insert-block task))
-      (when (and (> org-timeline-keep-elapsed 0)
+      (when (and (>= org-timeline-keep-elapsed 0)
                  today-or-tomorrow-only-p
                  (> (length tasks) 0))
         (org-timeline--merge-for-24h-cycle))
