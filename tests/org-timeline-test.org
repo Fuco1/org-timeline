@@ -6,7 +6,7 @@
     (let*     ((debug-on-error t)
                (org-agenda-files (list (buffer-file-name)))
                (org-agenda-start-day "2017-04-19")
-               (org-agenda-span 'day)
+               (org-agenda-span 2)
                (org-timeline-prepend nil)
                (org-timeline-show-clocked t)
                (org-timeline-dedicated-clocked-line t)
@@ -17,11 +17,21 @@
                (org-timeline-keep-elapsed -1)
                (org-timeline-insert-before-text "")) ; not default, but better for tests
       ;; use this next let to override defaults
-      (let ((org-agenda-span 4))
+      (let (
+
+            (org-timeline-show-text-in-blocks t)
+            (org-timeline-beginning-of-day-hour 0)
+            (org-timeline-overlap-in-new-line t)
+            (org-timeline-keep-elapsed 0)
+            (org-agenda-start-day "2021-05-14")
+           )
         (org-agenda nil "a"))))
   (runtest))
 #+end_src
+
 * TODO
-  SCHEDULED: <2017-04-19 Wed 10:00-11:00>
+  SCHEDULED: <2021-05-14 05:00-06:00>
 * TODO
-  SCHEDULED: <2017-04-22 Sat 10:30-11:30>"
+  SCHEDULED: <2021-05-14 05:00-06:10>
+* TODO
+  SCHEDULED: <2021-05-15 00:00-06:30>
