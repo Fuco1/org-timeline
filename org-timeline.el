@@ -432,7 +432,7 @@ Return t if this task will overlap another one when inserted."
                   (not (eq (line-end-position) (point-max))))
         (setq new-overlap-line-required-flag t)
         (forward-line))
-      (let ((decorated-slotline (propertize (concat group-name " " slotline)
+      (let ((decorated-slotline (propertize (concat "   " " " slotline)
                                             'org-timeline-day day
                                             'org-timeline-group-name group-name)))
         (when new-overlap-line-required-flag
