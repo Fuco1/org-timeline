@@ -1,0 +1,49 @@
+* see generated timeline (do `C-x C-e` after the progn. you can do `M-x runtest` to run again after)
+#+begin_src emacs-lisp
+(progn
+  (defun runtest ()
+    (interactive)
+    (let*     ((debug-on-error t)
+               (org-agenda-files (list (buffer-file-name)))
+               (org-agenda-start-day "2017-04-19")
+               (org-agenda-span 2)
+               (org-timeline-prepend nil)
+               (org-timeline-show-clocked t)
+               (org-timeline-dedicated-clocked-line t)
+               (org-timeline-overlap-in-new-line nil)
+               (org-timeline-emphasize-next-block nil)
+               (org-timeline-show-text-in-blocks nil)
+               (org-timeline-beginning-of-day-hour 5)
+               (org-timeline-keep-elapsed -1)
+               (org-timeline-insert-before-text "")) ; not default, but better for tests
+      ;; use this next let to override defaults
+      (let (
+
+            (org-timeline-show-text-in-blocks t)
+            (org-timeline-beginning-of-day-hour 0)
+            (org-timeline-overlap-in-new-line t)
+            (org-timeline-keep-elapsed 0)
+            (org-agenda-start-day "2021-05-14")
+            )
+        (org-agenda nil "a"))))
+  (runtest))
+  #+end_src
+
+* TODO
+SCHEDULED: <2021-05-14 20:00-21:00>
+* TODO
+SCHEDULED: <2021-05-14 20:10-21:00>
+* TODO
+SCHEDULED: <2021-05-14 20:00-21:00>
+:PROPERTIES:
+:TIMELINE_GROUP: left
+:END:
+* TODO
+SCHEDULED: <2021-05-15 00:00-00:30>
+* TODO
+SCHEDULED: <2021-05-15 00:10-00:50>
+* TODO
+SCHEDULED: <2021-05-15 00:00-00:30>
+:PROPERTIES:
+:TIMELINE_GROUP: right
+:END:
