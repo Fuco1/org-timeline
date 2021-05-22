@@ -217,14 +217,14 @@
          (let* ((start (text-property-any (point-min) (point-max) 'org-timeline-occupied t))
                 (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
            (goto-char start)
-           (expect (plist-get (get-text-property (point) 'font-lock-face) :overline) :to-be-truthy)
+           (expect (member '(:overline t) (get-text-property (point) 'font-lock-face)) :to-be-truthy)
            (goto-char (1- end))
-           (expect (plist-get (get-text-property (point) 'font-lock-face) :overline) :to-be nil)
+           (expect (member '(:overline t) (get-text-property (point) 'font-lock-face)) :to-be nil)
            (goto-char end))
          (let* ((start (text-property-any (point) (point-max) 'org-timeline-occupied t))
                 (end (text-property-not-all start (point-max) 'org-timeline-occupied t)))
            (goto-char start)
-           (expect (plist-get (get-text-property (point) 'font-lock-face) :overline) :to-be-truthy)
+           (expect (member '(:overline t) (get-text-property (point) 'font-lock-face)) :to-be-truthy)
            (goto-char end)))))
 
     (describe "without `org-timeline-overlap-in-new-line'"
