@@ -240,6 +240,7 @@ Return new copy of STRING."
               (setq current-line 1)))
           (buffer-string))))))
 
+;;;###autoload
 (defun org-timeline-insert-timeline ()
   "Insert graphical timeline into agenda buffer."
   (unless (buffer-narrowed-p)
