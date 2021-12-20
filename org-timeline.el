@@ -234,8 +234,7 @@ Return new copy of STRING."
                                  'help-echo (lambda (w obj pos)
                                               (org-timeline--hover-info w txt)
                                               txt) ;; the lambda will be called on block hover
-                                 'org-timeline-task-line line
-                                 'cursor-sensor-functions '(org-timeline--display-info))))
+                                 'org-timeline-task-line line)))
                 (add-text-properties start-pos end-pos props))
               (setq current-line 1)))
           (buffer-string))))))
@@ -251,7 +250,6 @@ Return new copy of STRING."
         (forward-line)))
     (forward-line)
     (let ((inhibit-read-only t))
-      (cursor-sensor-mode 1)
       (setq org-timeline-first-line (line-number-at-pos))
       (insert (org-timeline--generate-timeline))
       (insert (propertize (concat "\n" (make-string (/ (window-width) 2) ?─)) 'face 'org-time-grid 'org-timeline-end t) "\n")
